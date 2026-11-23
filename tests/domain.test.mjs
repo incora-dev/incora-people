@@ -22,6 +22,7 @@ import {
 } from "../modules/reimbursements/domain.ts";
 import {
   getDateContext,
+  formatTimeInZone,
   getDayDateRange,
   getMonthDateRange,
   getWeekDateRange,
@@ -1536,4 +1537,23 @@ test("inventory permissions are least-privilege and quantity/date rules are stri
   assert.equal(isValidInventoryDate("2024-02-31"), false);
   assert.equal(isValidInventoryDate("2024-04-31"), false);
   assert.equal(isValidInventoryDate("2026-10-27"), true);
+});
+
+test("timer start labels use the employee timezone across seasons and midnight", () => {
+  assert.equal(
+    formatTimeInZone("2026-11-23T08:00:00.000Z", "Europe/Kyiv"),
+    "10:00",
+  );
+  assert.equal(
+    formatTimeInZone("2026-07-23T07:00:00.000Z", "Europe/Kyiv"),
+    "10:00",
+  );
+  assert.equal(
+    formatTimeInZone("2026-11-23T22:30:00.000Z", "Europe/Kyiv"),
+    "00:30",
+  );
+  assert.equal(
+    formatTimeInZone("2026-11-23T08:00:00.000Z", "America/New_York"),
+    "03:00",
+  );
 });

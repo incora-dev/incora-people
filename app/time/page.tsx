@@ -57,6 +57,7 @@ export default async function TimePage() {
         absenceAllocations={overview.absenceAllocations}
         initialSchedule={overview.schedule}
         initialDate={overview.date}
+        initialTimeZone={overview.timeZone}
         periodLocked={overview.periodLocked}
         holidayDates={overview.holidayDates}
         projects={projects}

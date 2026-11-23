@@ -279,3 +279,12 @@ export function normalizeDateTime(value: string, timeZone: string) {
     ? (zonedDateTimeToUtc(match[1], match[2], timeZone)?.toISOString() ?? null)
     : null;
 }
+
+/** Format an instant in the employee's resolved timezone, independent of the runtime. */
+export function formatTimeInZone(value: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  }).format(new Date(value));
+}

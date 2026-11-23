@@ -1,0 +1,1 @@
+ALTER TABLE `time_entries` ADD `time_code` text DEFAULT 'project' NOT NULL;

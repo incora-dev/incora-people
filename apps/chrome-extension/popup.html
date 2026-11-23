@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>INCORA People — Час</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="icons/icon-48.png" alt="" />
+        <span>INCORA</span><small>PEOPLE</small>
+      </header>
+      <p id="session-status" class="eyebrow">РОБОЧИЙ ЧАС</p>
+      <h1 id="title">Перевіряємо таймер…</h1>
+      <p id="details">Зачекайте кілька секунд.</p>
+      <section id="today-summary" class="today-summary" hidden>
+        <span>Відпрацьовано сьогодні</span>
+        <strong id="today-total">0 год 00 хв</strong>
+      </section>
+      <button id="primary" class="primary" disabled>Завантаження</button>
+      <button id="sign-out" class="secondary" hidden>Вийти з акаунта</button>
+      <p id="message" class="message" aria-live="polite"></p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

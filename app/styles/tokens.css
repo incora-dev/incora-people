@@ -1,0 +1,15 @@
+:root {
+  --incora-yellow: #fec506;
+  --incora-yellow-soft: #fff7d6;
+  --ink: #18181a;
+  --ink-deep: #111111;
+  --black: var(--ink-deep);
+  --muted: #62656b;
+  --line: #e8e8e5;
+  --surface: #ffffff;
+  --canvas: #f5f5f2;
+  --green: #27965b;
+  --green-soft: #e8f7ef;
+  --danger: #d34b4b;
+  --shadow: 0 12px 38px rgba(24, 24, 26, 0.07);
+}

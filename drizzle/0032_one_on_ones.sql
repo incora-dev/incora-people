@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS one_on_one_rules (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, audience TEXT NOT NULL UNIQUE, cadence_days INTEGER NOT NULL DEFAULT 30, active INTEGER NOT NULL DEFAULT 1, updated_by_email TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS one_on_one_plans (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, employee_id INTEGER NOT NULL REFERENCES employees(id), facilitator_email TEXT NOT NULL, facilitator_kind TEXT NOT NULL, cadence_days INTEGER NOT NULL DEFAULT 30, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT one_on_one_plans_kind_check CHECK (facilitator_kind IN ('hr', 'manager')));
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS one_on_one_plans_employee_facilitator_idx ON one_on_one_plans (employee_id, facilitator_email);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS one_on_one_meetings (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, plan_id INTEGER NOT NULL REFERENCES one_on_one_plans(id), employee_id INTEGER NOT NULL REFERENCES employees(id), facilitator_email TEXT NOT NULL, held_at TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', shared_with_employee INTEGER NOT NULL DEFAULT 0, shared_with_manager INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS one_on_one_meetings_plan_held_idx ON one_on_one_meetings (plan_id, held_at);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS one_on_one_meetings_employee_held_idx ON one_on_one_meetings (employee_id, held_at);

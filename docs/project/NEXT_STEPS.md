@@ -1,0 +1,6 @@
+# Active web backlog
+
+- **P0 — Release gates:** Before any production operation, obtain authorization and reconcile the share-safe snapshot with private source and immutable historical migrations. Require clean dependency install, quality, build, target/binding checks, compatible D1 state and rollback plan. No confirmed current service outage was observed. If releasing the email changes, stop until a reviewed production release has been authorized.
+- **P1 — High priority:** Validate current email content in owner-controlled Gmail light/dark clients using guarded test buttons only when authorized. Verify authenticated sign-in and account scope on the intended custom hostname; confirm the exact allowed callbacks and intentional canonical hostname with owner. Establish a real isolated staging environment and retain a rehearsed recovery path.
+- **P2 — Improvements:** Add authenticated role matrix UI smoke with isolated fixtures, expand notification/failed-send observability, confirm scanner and retention controls, and standardize a clean private release provenance/tag process.
+- **P3 — Optional:** Improve smoke reporting, document API DTO examples for teams, and update accessibility/regression baselines. See [deferred scope](../roadmap/DEFERRED_AND_ARCHIVED.md) for excluded work, not web release blockers.

@@ -1,0 +1,76 @@
+{
+  "name": "incora-people",
+  "version": "0.5.0-mvp",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
+    "build": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
+    "package:extension": "bash scripts/package-chrome-extension.sh",
+    "package:cto-review": "bash scripts/package-cto-review.sh",
+    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log wrangler dev --persist-to \"$PWD/.wrangler/state\" -c dist/server/wrangler.json",
+    "deploy:cloudflare": "bash scripts/deploy-cloudflare.sh",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:e2e:local": "node tests/local-api-smoke.mjs",
+    "test:real-data": "node --experimental-strip-types --test tests/real-data-simulation.test.mjs",
+    "test:backup-restore": "node scripts/backup-restore-drill.mjs",
+    "typecheck": "tsc --noEmit",
+    "quality": "npm run format:check && npm run lint && npm run typecheck && npm test",
+    "format": "prettier --write \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.ts\" \"modules/**/*.ts\" \"db/**/*.ts\" \"worker/**/*.ts\" \"tests/**/*.mjs\" \"*.md\" \"docs/**/*.md\" package.json",
+    "format:check": "prettier --check \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.ts\" \"modules/**/*.ts\" \"db/**/*.ts\" \"worker/**/*.ts\" \"tests/**/*.mjs\" \"*.md\" \"docs/**/*.md\" package.json",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "db:generate:draft": "drizzle-kit generate",
+    "db:migrate:local": "npm run build && npm run db:migrate:local:built",
+    "db:migrate:local:built": "wrangler d1 migrations apply incora-people --local --persist-to \"$PWD/.wrangler/state\" -c dist/server/wrangler.json",
+    "db:migrate:remote": "npm run build && npm run db:migrate:remote:built",
+    "db:migrate:remote:built": "wrangler d1 migrations apply incora-people --remote -c dist/server/wrangler.json",
+    "db:seed:local": "npm run build && wrangler d1 execute incora-people --local --persist-to \"$PWD/.wrangler/state\" --file db/demo-seed.sql -c dist/server/wrangler.json",
+    "db:seed:remote": "npm run build && wrangler d1 execute incora-people --remote --file db/demo-seed.sql -c dist/server/wrangler.json"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "entities": "8.0.0",
+    "jose": "^6.2.4",
+    "lucide-react": "^0.468.0",
+    "next": "^16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sanitize-html": "^2.17.7",
+    "zod": "^4.4.3"
+  },
+  "overrides": {
+    "postcss": "8.5.23",
+    "nanoid": "3.3.18",
+    "next": {
+      "postcss": "8.5.23",
+      "sharp": "0.35.4"
+    },
+    "sharp": "0.35.4",
+    "baseline-browser-mapping": "2.11.23"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/sanitize-html": "^2.16.1",
+    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "localtunnel": "^2.0.2",
+    "prettier": "^3.9.6",
+    "react-server-dom-webpack": "19.2.8",
+    "tailwindcss": "4.2.1",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.0.13",
+    "wrangler": "4.92.0"
+  },
+  "type": "module"
+}

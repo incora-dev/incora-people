@@ -1,0 +1,279 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784798218961,
+      "tag": "0000_luxuriant_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784799068643,
+      "tag": "0001_fearless_felicia_hardy",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784802010792,
+      "tag": "0002_abnormal_nightmare",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784803081261,
+      "tag": "0003_chemical_natasha_romanoff",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784803912874,
+      "tag": "0004_ambiguous_maverick",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784880259090,
+      "tag": "0005_tiny_darkstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784886320000,
+      "tag": "0006_google_sso_superadmins",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784887830000,
+      "tag": "0007_add_nadiia_superadmin",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784889120000,
+      "tag": "0008_repair_superadmin_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1784889720000,
+      "tag": "0009_sites_demo_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784891700000,
+      "tag": "0010_superadmin_employee_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1784895300000,
+      "tag": "0011_bug_reports_and_preferences",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1784896800000,
+      "tag": "0012_work_mode_and_game",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1784900400000,
+      "tag": "0013_employee_profile_records",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1784973600000,
+      "tag": "0014_profile_media",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1785056400000,
+      "tag": "0015_home_communications",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1785063600000,
+      "tag": "0016_time_projects",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1784979569866,
+      "tag": "0017_nostalgic_piledriver",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1784980258823,
+      "tag": "0018_right_bug",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1784987394080,
+      "tag": "0019_natural_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1784987963065,
+      "tag": "0020_blue_justin_hammer",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1784989803342,
+      "tag": "0021_reflective_tyger_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1784992800000,
+      "tag": "0022_knowledge_guide_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1785156600000,
+      "tag": "0023_client_api_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1785160800000,
+      "tag": "0024_mobile_push_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1785225600000,
+      "tag": "0025_add_bohdan_superadmin",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1785229200000,
+      "tag": "0026_repair_superadmin_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1786089600000,
+      "tag": "0027_announcement_dismissals",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1786093200000,
+      "tag": "0028_time_entry_work_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1786096800000,
+      "tag": "0029_employee_document_folders",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1786100400000,
+      "tag": "0030_knowledge_sections",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1786104000000,
+      "tag": "0031_office_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1786107600000,
+      "tag": "0032_one_on_ones",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1786111200000,
+      "tag": "0033_announcement_polls",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1786114800000,
+      "tag": "0034_announcement_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1786118400000,
+      "tag": "0035_user_project_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1786204800000,
+      "tag": "0036_product_experience",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1786208400000,
+      "tag": "0037_knowledge_guide_hierarchy",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1786212000000,
+      "tag": "0038_knowledge_guide_hierarchy_repair",
+      "breakpoints": true
+    }
+  ]
+}

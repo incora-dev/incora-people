@@ -3,6 +3,8 @@ import { getDb } from "@/db";
 import { breakEntries, timeEntries } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 
+import { getEmployeeTimezone } from "@/modules/time/periods";
+
 export async function GET() {
   const user = await getCurrentUser();
   if (!user.employeeId) return Response.json({ active: false, linked: false });
@@ -32,6 +34,7 @@ export async function GET() {
   return Response.json({
     active: Boolean(entry),
     linked: true,
+    timeZone: await getEmployeeTimezone(user.employeeId),
     entry,
     openBreak,
   });

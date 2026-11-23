@@ -215,6 +215,7 @@ export async function getTimeOverview(
   return {
     openEntry,
     openBreak,
+    timeZone,
     history,
     breakHistory,
     // Legacy rows may contain an invalid timezone. Keep the persisted row

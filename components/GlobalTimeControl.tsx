@@ -19,11 +19,14 @@ import type {
   TimeEntryDto as Entry,
 } from "@/modules/time/types";
 
+import { formatTimeInZone } from "@/modules/shared/date";
+
 export function GlobalTimeControl() {
   const { t } = useI18n();
   const layerRef = useRef<HTMLDivElement>(null);
   const [entry, setEntry] = useState<Entry | undefined>();
   const [openBreak, setOpenBreak] = useState<BreakEntry | undefined>();
+  const [timeZone, setTimeZone] = useState<string>();
   const [linked, setLinked] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,12 +44,14 @@ export function GlobalTimeControl() {
         async (response) =>
           (await response.json()) as {
             linked: boolean;
+            timeZone?: string;
             entry?: Entry;
             openBreak?: BreakEntry;
           },
       )
       .then((data) => {
         setLinked(data.linked);
+        setTimeZone(data.timeZone);
         setEntry(data.entry);
         setSelectedMode(data.entry?.workMode ?? null);
         setOpenBreak(data.openBreak);
@@ -171,7 +176,7 @@ export function GlobalTimeControl() {
               </strong>
               <small>
                 {entry
-                  ? `${t("Started at")} ${entry.clockIn.slice(11, 16)} · ${elapsed}`
+                  ? `${t("Started at")} ${timeZone ? formatTimeInZone(entry.clockIn, timeZone) : "…"} · ${elapsed}`
                   : t("Start tracking without leaving this page")}
               </small>
             </span>

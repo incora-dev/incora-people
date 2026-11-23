@@ -24,6 +24,7 @@ import {
 } from "@/components/time/TimeEntryDialogs";
 import {
   dateKeyInTimeZone,
+  formatTimeInZone,
   getDayDateRange,
   getMonthDateRange,
   isoWeekday,
@@ -52,6 +53,7 @@ export function TimeTracker({
   absenceAllocations,
   initialSchedule,
   initialDate,
+  initialTimeZone,
   periodLocked,
   holidayDates,
   projects,
@@ -65,6 +67,7 @@ export function TimeTracker({
   absenceAllocations: Record<string, number>;
   initialSchedule: WorkSchedule | undefined;
   initialDate: DateContext;
+  initialTimeZone: string;
   periodLocked: boolean;
   holidayDates: string[];
   projects: TimeProject[];
@@ -80,6 +83,7 @@ export function TimeTracker({
   const [message, setMessage] = useState("");
   const [breakBusy, setBreakBusy] = useState(false);
   const [schedule, setSchedule] = useState(initialSchedule);
+  const timeZone = schedule?.timezone ?? initialTimeZone;
   const [manualOpen, setManualOpen] = useState(false);
   const [manualDate, setManualDate] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -103,15 +107,10 @@ export function TimeTracker({
     : "00:00:00";
 
   const monthStats = useMemo(() => {
-    const monthRange = getMonthDateRange(
-      date.monthKey,
-      schedule?.timezone ?? "Europe/Kyiv",
-    );
+    const monthRange = getMonthDateRange(date.monthKey, timeZone);
     const monthEntries = history.filter((entry) => {
       if (!monthRange)
-        return dateKeyInZone(entry.clockIn, schedule?.timezone).startsWith(
-          date.monthKey,
-        );
+        return dateKeyInZone(entry.clockIn, timeZone).startsWith(date.monthKey);
       const start = new Date(entry.clockIn).getTime();
       const end = entry.clockOut
         ? new Date(entry.clockOut).getTime()
@@ -194,6 +193,7 @@ export function TimeTracker({
     breakHistory,
     monthDays,
     schedule,
+    timeZone,
   ]);
 
   async function toggle() {
@@ -371,17 +371,14 @@ export function TimeTracker({
           </div>
         )}
         {activeEntry &&
-          dateKeyInZone(activeEntry.clockIn, schedule?.timezone) !==
-            date.today && (
+          dateKeyInZone(activeEntry.clockIn, timeZone) !== date.today && (
             <div className="time-warning">
               <AlertTriangle size={16} />{" "}
               {t("This entry may be missing a clock-out.")}
               <button
                 className="text-link"
                 onClick={() =>
-                  setSelectedDate(
-                    dateKeyInZone(activeEntry.clockIn, schedule?.timezone),
-                  )
+                  setSelectedDate(dateKeyInZone(activeEntry.clockIn, timeZone))
                 }
               >
                 {t("Open day")}
@@ -444,6 +441,7 @@ export function TimeTracker({
             holidayDates={holidayDates}
             expectedMinutes={monthStats.daily}
             schedule={schedule}
+            timeZone={timeZone}
             onSelectDate={setSelectedDate}
           />
         ) : (
@@ -452,6 +450,7 @@ export function TimeTracker({
             breaks={breakHistory}
             date={date}
             schedule={schedule}
+            timeZone={timeZone}
           />
         )}
       </article>
@@ -466,7 +465,7 @@ export function TimeTracker({
         <div className="live-time">{duration}</div>
         <p className="muted">
           {activeEntry
-            ? `${t("Started today at")} ${formatTime(activeEntry.clockIn, schedule?.timezone)}`
+            ? `${t("Started today at")} ${formatTimeInZone(activeEntry.clockIn, timeZone)}`
             : t("Start when you begin your workday.")}
         </p>
         {!readOnlyPreview && !activeEntry && (
@@ -513,7 +512,7 @@ export function TimeTracker({
         {activeBreak && (
           <span className="break-indicator">
             <Coffee size={15} /> {t("On break since")}{" "}
-            {formatTime(activeBreak.startedAt, schedule?.timezone)}
+            {formatTimeInZone(activeBreak.startedAt, timeZone)}
           </span>
         )}
         {!readOnlyPreview && (
@@ -582,10 +581,10 @@ export function TimeTracker({
         <DayEntriesDialog
           date={selectedDate}
           entries={history.filter((entry) =>
-            entryOverlapsLocalDay(entry, selectedDate, schedule?.timezone),
+            entryOverlapsLocalDay(entry, selectedDate, timeZone),
           )}
           projects={projects}
-          timeZone={schedule?.timezone}
+          timeZone={timeZone}
           readOnlyPreview={readOnlyPreview}
           onClose={() => setSelectedDate(null)}
           onUpdated={(updated) =>
@@ -604,7 +603,7 @@ export function TimeTracker({
         <ManualEntryDialog
           today={manualDate ?? date.today}
           projects={projects}
-          timeZone={schedule?.timezone}
+          timeZone={timeZone}
           onClose={() => setManualOpen(false)}
           onCreated={(created) => setHistory((items) => [created, ...items])}
         />
@@ -639,6 +638,7 @@ function MonthCalendar({
   holidayDates,
   expectedMinutes,
   schedule,
+  timeZone,
   onSelectDate,
 }: {
   history: TimeEntry[];
@@ -649,11 +649,11 @@ function MonthCalendar({
   holidayDates: string[];
   expectedMinutes: number;
   schedule: WorkSchedule | undefined;
+  timeZone: string;
   onSelectDate: (date: string) => void;
 }) {
   const { locale, t } = useI18n();
   const monthDays = new Date(Date.UTC(date.year, date.month, 0)).getUTCDate();
-  const timeZone = schedule?.timezone ?? "Europe/Kyiv";
   const entries = new Map<number, number>();
   for (let day = 1; day <= monthDays; day += 1) {
     const dateKey = `${date.monthKey}-${String(day).padStart(2, "0")}`;
@@ -745,11 +745,13 @@ function WeekOverview({
   breaks,
   date,
   schedule,
+  timeZone,
 }: {
   history: TimeEntry[];
   breaks: BreakEntry[];
   date: DateContext;
   schedule: WorkSchedule | undefined;
+  timeZone: string;
 }) {
   const { locale, t } = useI18n();
   const today = new Date(`${date.today}T12:00:00`);
@@ -760,10 +762,9 @@ function WeekOverview({
     const day = new Date(weekStart);
     day.setDate(weekStart.getDate() + index);
     const key = localDateKey(day);
-    const range = getDayDateRange(key, schedule?.timezone ?? "Europe/Kyiv");
+    const range = getDayDateRange(key, timeZone);
     const entries = history.filter((entry) => {
-      if (!range)
-        return dateKeyInZone(entry.clockIn, schedule?.timezone) === key;
+      if (!range) return dateKeyInZone(entry.clockIn, timeZone) === key;
       const start = new Date(entry.clockIn).getTime();
       const end = entry.clockOut
         ? new Date(entry.clockOut).getTime()
@@ -860,14 +861,6 @@ function entryOverlapsLocalDay(
   const range = getDayDateRange(date, timeZone);
   if (!range) return dateKeyInZone(entry.clockIn, timeZone) === date;
   return intervalIntersectsRange(entry.clockIn, entry.clockOut, range);
-}
-
-function formatTime(value: string, timeZone = "Europe/Kyiv") {
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone,
-  }).format(new Date(value));
 }
 
 function formatMonth(date: DateContext, locale: "uk" | "en") {

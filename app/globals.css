@@ -3210,13 +3210,17 @@ h2 {
     opacity 140ms ease;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
 .button:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.button:disabled[aria-busy="false"] {
+  cursor: default;
 }
 
 .primary-button {

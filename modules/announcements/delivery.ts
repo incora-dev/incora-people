@@ -22,6 +22,7 @@ import {
   plainAnnouncementText,
 } from "@/modules/announcements/content";
 import { postAnnouncementWebhook } from "@/modules/announcements/webhook";
+import { activeEmployeeCondition } from "@/modules/people/active";
 
 export async function enqueueAnnouncementDelivery(
   announcementId: number,
@@ -71,7 +72,7 @@ export async function processAnnouncementDeliveries(
     .innerJoin(employees, eq(users.employeeId, employees.id))
     .where(
       and(
-        eq(employees.status, "active"),
+        activeEmployeeCondition(),
         eq(users.enabled, true),
         sql`lower(trim(${users.email})) = lower(trim(${employees.email}))`,
       ),

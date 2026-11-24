@@ -22,6 +22,7 @@ import { AdvancedEmployeeFilters } from "@/components/AdvancedEmployeeFilters";
 import { formatEmployeeTenure, tenureYears } from "@/modules/people/tenure";
 import {
   filterEmployeeDirectoryItems,
+  isActiveLifecycleStage,
   sortEmployeeDirectoryItems,
   type EmployeeDirectoryCycleFilter,
   type EmployeeDirectoryLifecycleFilter,
@@ -37,6 +38,7 @@ import { addCalendarMonths } from "@/modules/people/dates";
 export function EmployeeDirectory({
   employees,
   canViewInactive,
+  canViewNotInvited,
   canCreate,
   canExport,
   orgUnits,
@@ -46,6 +48,7 @@ export function EmployeeDirectory({
 }: {
   employees: EmployeeDirectoryItem[];
   canViewInactive: boolean;
+  canViewNotInvited: boolean;
   canCreate: boolean;
   canExport: boolean;
   orgUnits: OrgUnitDto[];
@@ -192,8 +195,11 @@ export function EmployeeDirectory({
   );
   const statusCounts = useMemo(
     () => ({
-      active: matchingQuickFilters.filter(
-        (employee) => employee.lifecycleStatus !== "terminated",
+      active: matchingQuickFilters.filter((employee) =>
+        isActiveLifecycleStage(employee.lifecycleStatus),
+      ).length,
+      awaitingInvitation: matchingQuickFilters.filter(
+        (employee) => employee.lifecycleStatus === "awaiting_invitation",
       ).length,
       terminated: matchingQuickFilters.filter(
         (employee) => employee.lifecycleStatus === "terminated",
@@ -213,7 +219,10 @@ export function EmployeeDirectory({
     tenureRanges.length +
     includeTechnologies.length +
     excludeTechnologies.length +
-    (canViewInactive && lifecycleFilter !== "all" ? 1 : 0) +
+    (lifecycleFilter !== "all" &&
+    (canViewInactive || lifecycleFilter !== "active")
+      ? 1
+      : 0) +
     (employmentCycleFilter !== "all" ? 1 : 0);
   const searchFilterGroup = (
     label: string,
@@ -557,6 +566,9 @@ export function EmployeeDirectory({
               }
             >
               <option value="all">{t("All stages")}</option>
+              {canViewNotInvited && (
+                <option value="awaiting_invitation">{t("Not invited")}</option>
+              )}
               <option value="working">{t("Working")}</option>
               <option value="probation">{t("Probation")}</option>
               <option value="on_leave">{t("On leave")}</option>
@@ -565,37 +577,48 @@ export function EmployeeDirectory({
               )}
             </select>
           </label>
-          {canViewInactive && (
-            <div
-              className="directory-quick-status"
-              role="group"
-              aria-label={t("Employee status filter")}
-            >
-              {(
-                [
-                  ["active", "Active employees", statusCounts.active],
-                  [
-                    "terminated",
-                    "Terminated employees",
-                    statusCounts.terminated,
-                  ],
-                  ["all", "All employees", statusCounts.all],
-                ] as const
-              ).map(([value, label, count]) => (
-                <button
-                  type="button"
-                  key={value}
-                  className={
-                    lifecycleFilter === value ? "directory-status-active" : ""
-                  }
-                  aria-pressed={lifecycleFilter === value}
-                  onClick={() => setLifecycleFilter(value)}
-                >
-                  {t(label)} <span>{count}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <div
+            className="directory-quick-status"
+            role="group"
+            aria-label={t("Employee status filter")}
+          >
+            {(
+              [
+                ["active", "Active employees", statusCounts.active],
+                ...(canViewNotInvited
+                  ? ([
+                      [
+                        "awaiting_invitation",
+                        "Not invited employees",
+                        statusCounts.awaitingInvitation,
+                      ],
+                    ] as const)
+                  : []),
+                ...(canViewInactive
+                  ? ([
+                      [
+                        "terminated",
+                        "Terminated employees",
+                        statusCounts.terminated,
+                      ],
+                    ] as const)
+                  : []),
+                ["all", "All employees", statusCounts.all],
+              ] as const
+            ).map(([value, label, count]) => (
+              <button
+                type="button"
+                key={value}
+                className={
+                  lifecycleFilter === value ? "directory-status-active" : ""
+                }
+                aria-pressed={lifecycleFilter === value}
+                onClick={() => setLifecycleFilter(value)}
+              >
+                {t(label)} <span>{count}</span>
+              </button>
+            ))}
+          </div>
           <label className="directory-compact-select directory-sort-select">
             <span className="sr-only">{t("Sort employees")}</span>
             <select
@@ -864,6 +887,7 @@ function ImportEmployeesDialog({ onClose }: { onClose: () => void }) {
 }
 
 function formatStatus(status: string, t: (key: string) => string) {
+  if (status === "awaiting_invitation") return t("Not invited");
   if (status === "probation") return t("Probation");
   if (status === "terminated") return t("Terminated");
   if (status === "working") return t("Working");

@@ -14,7 +14,10 @@ export async function GET(request: Request) {
     return Response.json({ error: "Invalid employee ID." }, { status: 400 });
   }
 
-  const directory = await getEmployeeDirectory({ includeInactive: true });
+  const directory = await getEmployeeDirectory({
+    includeInactive: true,
+    includeNotInvited: true,
+  });
   const employees = employeeId
     ? directory.filter((employee) => employee.id === employeeId)
     : directory;

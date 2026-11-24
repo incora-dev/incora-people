@@ -7,12 +7,21 @@ type DirectoryEmployee = {
   startDate: string;
   status: string;
   lastWorkingDay?: string | null;
-  lifecycleStatus: "working" | "probation" | "terminated" | "on_leave";
+  lifecycleStatus: EmployeeLifecycleStage;
 };
 
-export type EmployeeDirectoryLifecycleFilter = "active" | "terminated" | "all";
+export type EmployeeLifecycleStage =
+  "awaiting_invitation" | "working" | "probation" | "terminated" | "on_leave";
+
+export type EmployeeDirectoryLifecycleFilter =
+  "active" | "awaiting_invitation" | "terminated" | "all";
 export type EmployeeDirectoryCycleFilter =
-  "all" | "working" | "probation" | "on_leave" | "terminated";
+  | "all"
+  | "awaiting_invitation"
+  | "working"
+  | "probation"
+  | "on_leave"
+  | "terminated";
 
 /** Inactive employee records are visible in people discovery only to Super Admin. */
 export function canViewInactiveEmployees(role: string) {
@@ -23,11 +32,27 @@ export function getEmployeeLifecycleStage(
   status: string,
   probationEnd: string | null | undefined,
   today: string,
+  invited = true,
 ): DirectoryEmployee["lifecycleStatus"] {
   if (status === "inactive") return "terminated";
+  if (!invited) return "awaiting_invitation";
   if (status === "on_leave") return "on_leave";
   if (probationEnd && probationEnd >= today) return "probation";
   return "working";
+}
+
+/** Active means invited to the system and not terminated. */
+export function isActiveLifecycleStage(stage: EmployeeLifecycleStage) {
+  return stage !== "terminated" && stage !== "awaiting_invitation";
+}
+
+/**
+ * People who were added but not invited yet are visible only to those who
+ * manage people (HR and Super Admin). Everyone else sees them only after the
+ * invitation, except the person's own profile.
+ */
+export function canViewNotInvitedEmployees(access: { managePeople: boolean }) {
+  return access.managePeople;
 }
 
 export type EmployeeDirectorySort =
@@ -55,7 +80,13 @@ export function filterEmployeeDirectoryItems<T extends DirectoryEmployee>(
     }
     if (
       options.lifecycle === "active" &&
-      employee.lifecycleStatus === "terminated"
+      !isActiveLifecycleStage(employee.lifecycleStatus)
+    ) {
+      return false;
+    }
+    if (
+      options.lifecycle === "awaiting_invitation" &&
+      employee.lifecycleStatus !== "awaiting_invitation"
     ) {
       return false;
     }

@@ -26,6 +26,7 @@ import {
   announcementTitleText,
   sanitizeAnnouncementHtml,
 } from "@/modules/announcements/content";
+import { activeEmployeeCondition } from "@/modules/people/active";
 
 export async function getDashboardData(
   user: CurrentUser,
@@ -100,7 +101,7 @@ export async function getDashboardData(
       startDate: employees.startDate,
     })
     .from(employees)
-    .where(eq(employees.status, "active"));
+    .where(activeEmployeeCondition());
 
   const whoIsOut = await db
     .select({

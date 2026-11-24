@@ -20,6 +20,10 @@ import {
 import { parseJsonRequest } from "@/modules/shared/http";
 import { getDateContext } from "@/modules/shared/date";
 import { addCalendarDays } from "@/modules/people/dates";
+import {
+  activeEmployeeCondition,
+  employeeInvitedField,
+} from "@/modules/people/active";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -305,11 +309,12 @@ async function canManageEmployee(
   if (access.managePeople) return true;
   if (user.employeeId === null) return false;
   const [employee] = await getDb()
-    .select({ managerId: employees.managerId })
+    .select({ managerId: employees.managerId, invited: employeeInvitedField() })
     .from(employees)
     .where(eq(employees.id, employeeId))
     .limit(1);
-  return employee?.managerId === user.employeeId;
+  // Only HR works with people who were not invited yet.
+  return employee?.managerId === user.employeeId && employee.invited;
 }
 
 async function recordConversation(
@@ -591,7 +596,7 @@ async function saveConversationNote(
           and(
             inArray(users.id, [...requestedIds]),
             eq(users.enabled, true),
-            eq(employees.status, "active"),
+            activeEmployeeCondition(),
           ),
         );
       if (
@@ -619,7 +624,7 @@ async function saveConversationNote(
         .where(
           and(
             inArray(employees.teamUnitId, command.teamIds),
-            eq(employees.status, "active"),
+            activeEmployeeCondition(),
           ),
         );
       if (
@@ -653,7 +658,7 @@ async function saveConversationNote(
             inArray(orgUnits.id, command.teamIds),
             eq(orgUnits.type, "team"),
             eq(orgUnits.active, true),
-            eq(employees.status, "active"),
+            activeEmployeeCondition(),
             eq(users.enabled, true),
           ),
         );
@@ -823,7 +828,7 @@ async function getEmployeeRecipient(
     .where(
       and(
         eq(employees.id, employeeId),
-        eq(employees.status, "active"),
+        activeEmployeeCondition(),
         eq(users.enabled, true),
       ),
     )
@@ -865,6 +870,8 @@ async function syncHrPlans(
         lastName: employees.lastName,
       })
       .from(employees)
+      // HR plans are an exception to "not invited is not active": onboarding
+      // and probation 1:1s are planned for newcomers before their invitation.
       .where(eq(employees.status, "active")),
   ]);
   const activeRules = rules.filter((rule) => rule.active);

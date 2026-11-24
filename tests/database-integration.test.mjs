@@ -2972,6 +2972,34 @@ test("0071 invitation migration upgrades the 0070 schema without rewriting HR, i
         .get().status,
       "sent",
     );
+    const { employeeInvitedSql } = await import(
+      new URL("modules/people/activation.ts", root)
+    );
+    const invited = (id) =>
+      db
+        .prepare(
+          `SELECT ${employeeInvitedSql("employees.id")} AS invited FROM employees WHERE id=?`,
+        )
+        .get(id).invited === 1;
+    assert.equal(
+      invited(employeeId),
+      true,
+      "a provider-accepted invitation activates the profile",
+    );
+    assert.equal(
+      invited(newEmployeeId),
+      false,
+      "a newly added person without an invitation is not active",
+    );
+    db.prepare("UPDATE users SET last_login_at=? WHERE id=?").run(
+      now,
+      newUserId,
+    );
+    assert.equal(
+      invited(newEmployeeId),
+      true,
+      "a person who already signed in is not shown as awaiting an invitation",
+    );
     assert.throws(
       () =>
         db

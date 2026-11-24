@@ -5097,7 +5097,8 @@ body:has(#history:target) .profile-tabs a[href="#history"]::after {
   font-size: 9px;
 }
 
-.status-badge.pending {
+.status-badge.pending,
+.status-badge.awaiting_invitation {
   color: #796209;
   background: var(--incora-yellow-soft);
 }

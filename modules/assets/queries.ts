@@ -43,6 +43,8 @@ export async function getAssetsWorkspaceData(
             lastName: employees.lastName,
           })
           .from(employees)
+          // Newcomers can receive equipment before their invitation is sent;
+          // see isActiveEmployee in app/api/assets/route.ts.
           .where(eq(employees.status, "active"))
           .orderBy(asc(employees.firstName), asc(employees.lastName))
       : Promise.resolve([]),

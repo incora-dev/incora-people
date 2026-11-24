@@ -15,10 +15,13 @@ import {
   users,
 } from "@/db/schema";
 import { getDateContext } from "@/modules/shared/date";
+import { employeeInvitedSql } from "@/modules/people/activation";
+import { employeeInvitedCondition } from "@/modules/people/active";
 import { getEmployeeDefaults } from "@/modules/settings/system";
+import { activeEmployeeCondition } from "@/modules/people/active";
 
 export function getEmployeeDirectory(
-  options: { includeInactive?: boolean } = {},
+  options: { includeInactive?: boolean; includeNotInvited?: boolean } = {},
 ) {
   const { today } = getDateContext();
   return getDb()
@@ -48,9 +51,15 @@ export function getEmployeeDirectory(
       status: employees.status,
       probationEnd: employees.probationEnd,
       lifecycleStatus: sql<
-        "working" | "probation" | "terminated" | "on_leave"
+        | "awaiting_invitation"
+        | "working"
+        | "probation"
+        | "terminated"
+        | "on_leave"
       >`CASE
         WHEN ${employees.status} = 'inactive' THEN 'terminated'
+        WHEN NOT ${sql.raw(employeeInvitedSql('"employees"."id"'))}
+          THEN 'awaiting_invitation'
         WHEN ${employees.status} = 'on_leave' THEN 'on_leave'
         WHEN ${employees.probationEnd} IS NOT NULL
           AND ${employees.probationEnd} >= ${today}
@@ -112,11 +121,25 @@ export function getEmployeeDirectory(
       ),
     )
     .where(
-      options.includeInactive
-        ? undefined
-        : sql`${employees.status} <> 'inactive'`,
+      and(
+        options.includeInactive
+          ? undefined
+          : sql`${employees.status} <> 'inactive'`,
+        options.includeNotInvited ? undefined : employeeInvitedCondition(),
+      ),
     )
     .orderBy(employees.firstName);
+}
+
+export async function isEmployeeInvited(employeeId: number) {
+  const [row] = await getDb()
+    .select({
+      invited: sql<number>`${sql.raw(employeeInvitedSql('"employees"."id"'))}`,
+    })
+    .from(employees)
+    .where(eq(employees.id, employeeId))
+    .limit(1);
+  return Boolean(row?.invited);
 }
 
 export function getEmployeeTermination(employeeId: number) {
@@ -331,10 +354,7 @@ export async function getEmployeeProfileRelationships(employeeId: number) {
       .select(fields)
       .from(employees)
       .where(
-        and(
-          eq(employees.managerId, employeeId),
-          eq(employees.status, "active"),
-        ),
+        and(eq(employees.managerId, employeeId), activeEmployeeCondition()),
       )
       .orderBy(employees.firstName, employees.lastName),
     employee.teamUnitId
@@ -345,7 +365,7 @@ export async function getEmployeeProfileRelationships(employeeId: number) {
             and(
               eq(employees.teamUnitId, employee.teamUnitId),
               ne(employees.id, employeeId),
-              eq(employees.status, "active"),
+              activeEmployeeCondition(),
             ),
           )
           .orderBy(employees.firstName, employees.lastName)
@@ -371,7 +391,7 @@ export async function getEffectiveWorkSchedule(employeeId: number) {
   return { ...defaults, source: "default" as const };
 }
 
-export function getOrgPeople() {
+export function getOrgPeople(options: { includeNotInvited?: boolean } = {}) {
   return getDb()
     .select({
       id: employees.id,
@@ -391,6 +411,7 @@ export function getOrgPeople() {
       )`.as("photo_file_id"),
     })
     .from(employees)
+    .where(options.includeNotInvited ? undefined : employeeInvitedCondition())
     .orderBy(employees.firstName);
 }
 

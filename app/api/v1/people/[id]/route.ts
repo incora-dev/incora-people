@@ -1,4 +1,5 @@
-import { getApiClientUser } from "@/lib/auth";
+import { getAccessPolicy, getApiClientUser } from "@/lib/auth";
+import { canViewNotInvitedEmployees } from "@/modules/people/directory";
 import {
   getEmployeeDirectory,
   getEmployeeProfileRecords,
@@ -18,9 +19,14 @@ export async function GET(
   const employeeId = Number(id);
   if (!Number.isInteger(employeeId))
     return Response.json({ error: "Invalid employee." }, { status: 400 });
-  const employee = (await getEmployeeDirectory()).find(
-    (person) => person.id === employeeId,
-  );
+  const access = await getAccessPolicy(client.user);
+  const employee = (
+    await getEmployeeDirectory({
+      includeNotInvited:
+        canViewNotInvitedEmployees(access) ||
+        client.user.employeeId === employeeId,
+    })
+  ).find((person) => person.id === employeeId);
   if (!employee)
     return Response.json({ error: "Employee not found." }, { status: 404 });
   return Response.json({

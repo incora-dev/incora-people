@@ -1,4 +1,5 @@
-import { getApiClientUser } from "@/lib/auth";
+import { getAccessPolicy, getApiClientUser } from "@/lib/auth";
+import { canViewNotInvitedEmployees } from "@/modules/people/directory";
 import { getEmployeeDirectory } from "@/modules/people/queries";
 
 export async function GET(request: Request) {
@@ -12,7 +13,10 @@ export async function GET(request: Request) {
 
   const query = new URL(request.url).searchParams.get("q")?.trim();
   const normalized = query?.toLocaleLowerCase("uk-UA") ?? "";
-  const people = await getEmployeeDirectory();
+  const access = await getAccessPolicy(clientUser.user);
+  const people = await getEmployeeDirectory({
+    includeNotInvited: canViewNotInvitedEmployees(access),
+  });
   const visible = normalized
     ? people.filter((person) =>
         [

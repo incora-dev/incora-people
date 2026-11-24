@@ -4,15 +4,17 @@ import { OrgChart } from "@/components/OrgChart";
 import { getOrgPeople, getOrgUnits } from "@/lib/data";
 import { getServerI18n } from "@/lib/i18n-server";
 import { formatCount } from "@/lib/i18n";
-import { getCurrentUser } from "@/lib/auth";
+import { getAccessPolicy, getCurrentUser } from "@/lib/auth";
+import { canViewNotInvitedEmployees } from "@/modules/people/directory";
 
 export const metadata: Metadata = { title: "Org chart" };
 
 export default async function OrgPage() {
   const { locale, t } = await getServerI18n();
-  const [user, people, units] = await Promise.all([
-    getCurrentUser(),
-    getOrgPeople(),
+  const user = await getCurrentUser();
+  const access = await getAccessPolicy(user);
+  const [people, units] = await Promise.all([
+    getOrgPeople({ includeNotInvited: canViewNotInvitedEmployees(access) }),
     getOrgUnits(),
   ]);
   const visiblePeople = user.isPreview

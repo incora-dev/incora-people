@@ -54,7 +54,8 @@ export type EmployeeDirectoryItem = Pick<
   workMode: "office" | "remote";
   photoFileId: string | null;
   technologies: string | null;
-  lifecycleStatus: "working" | "probation" | "terminated" | "on_leave";
+  lifecycleStatus:
+    "awaiting_invitation" | "working" | "probation" | "terminated" | "on_leave";
   lastWorkingDay: string | null;
 };
 

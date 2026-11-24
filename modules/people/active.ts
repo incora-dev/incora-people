@@ -1,4 +1,4 @@
-import { and, eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { employees } from "@/db/schema";
 import { employeeInvitedSql } from "@/modules/people/activation";
 
@@ -14,6 +14,17 @@ export function employeeInvitedCondition(): SQL {
  */
 export function activeEmployeeCondition(): SQL {
   return and(eq(employees.status, "active"), employeeInvitedCondition())!;
+}
+
+/**
+ * An invited employee who is still employed, including one on leave. Use it
+ * for company-wide announcements that people on leave should still receive.
+ */
+export function employedInvitedEmployeeCondition(): SQL {
+  return and(
+    inArray(employees.status, ["active", "on_leave"]),
+    employeeInvitedCondition(),
+  )!;
 }
 
 /** Selectable boolean form of employeeInvitedCondition. */

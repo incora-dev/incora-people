@@ -367,7 +367,7 @@ test("announcement flow filters recipients, respects archive/expiry, and prefers
   const adminSettings = await source(
     "components/admin/HomeContentSettings.tsx",
   );
-  assert.match(delivery, /activeEmployeeCondition\(\)/);
+  assert.match(delivery, /employedInvitedEmployeeCondition\(\)/);
   assert.match(delivery, /eq\(users\.enabled, true\)/);
   assert.match(
     delivery,
@@ -383,6 +383,11 @@ test("announcement flow filters recipients, respects archive/expiry, and prefers
     active,
     /and\(eq\(employees\.status, "active"\), employeeInvitedCondition\(\)\)/,
     "announcements go only to employees who were invited",
+  );
+  assert.match(
+    active,
+    /inArray\(employees\.status, \["active", "on_leave"\]\),\s*employeeInvitedCondition\(\)/,
+    "employees on leave still receive announcements",
   );
   assert.match(delivery, /eq\(announcements\.active, true\)/);
   assert.match(delivery, /announcements\.expiresAt/);

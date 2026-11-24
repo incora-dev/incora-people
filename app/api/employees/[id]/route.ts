@@ -694,7 +694,7 @@ function buildDeletionGuard(
       WHERE e.id=? AND u.id=? AND u.id<>?
         AND (SELECT COUNT(*) FROM users linked_account WHERE linked_account.employee_id=e.id)=1
         AND e.email=? AND e.employee_code IS ? AND e.first_name=? AND e.last_name=?
-        AND u.role='employee' AND e.status='active'
+        AND u.role='employee'
         AND lower(trim(e.email))=lower(trim(u.email))
         AND NOT EXISTS (SELECT 1 FROM protected_admin_accounts p WHERE p.user_id=u.id)
         AND NOT EXISTS (
@@ -845,7 +845,6 @@ export async function DELETE(
     actorUserId: actor.userId,
     targetUserId: account.id,
     targetRole: account.role,
-    targetStatus: employee.status,
     accountMatchesEmployee:
       account.email.trim().toLowerCase() ===
       employee.email.trim().toLowerCase(),
@@ -922,7 +921,11 @@ export async function DELETE(
         .bind(
           actor.email,
           parsed.data.requestId,
-          JSON.stringify({ employeeId, employeeCreatedAt: employee.createdAt }),
+          JSON.stringify({
+            employeeId,
+            employeeCreatedAt: employee.createdAt,
+            employeeStatus: employee.status,
+          }),
           now,
         ),
       d1

@@ -88,7 +88,6 @@ export type EmployeeDeletionCandidate = {
   actorUserId: number | null;
   targetUserId: number | null;
   targetRole: string | null;
-  targetStatus: string;
   accountMatchesEmployee: boolean;
   protectedIdentity: boolean;
   pristineInitialHistory: boolean;
@@ -121,12 +120,7 @@ export function employeeDeletionBlocker(
   if (candidate.protectedIdentity || candidate.targetRole === "super_admin") {
     return "protected";
   }
-  if (
-    candidate.targetRole !== "employee" ||
-    candidate.targetStatus !== "active"
-  ) {
-    return "employee_only";
-  }
+  if (candidate.targetRole !== "employee") return "employee_only";
   if (!candidate.targetUserId || !candidate.accountMatchesEmployee) {
     return "identity_mismatch";
   }
@@ -150,7 +144,7 @@ export function employeeDeletionError(blocker: EmployeeDeletionBlocker) {
     self: "You cannot delete your own account.",
     protected: "Protected administrator identities cannot be deleted.",
     employee_only:
-      "Only an active ordinary employee record can be permanently deleted.",
+      "Only an ordinary employee record can be permanently deleted.",
     identity_mismatch:
       "The employee and account relationship is missing or ambiguous.",
     employment_history:

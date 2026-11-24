@@ -17,6 +17,7 @@ import {
   canReadConversationNote,
   filterVisibleOneOnOnePlans,
 } from "@/modules/one-on-one/domain";
+import { employeeInvitedField } from "@/modules/people/active";
 
 type PersonRow = {
   id: number;
@@ -26,6 +27,7 @@ type PersonRow = {
   team: string | null;
   teamUnitId: number | null;
   status: string;
+  invited: boolean;
   managerId: number | null;
   probationEnd: string | null;
 };
@@ -59,6 +61,7 @@ export async function getOneOnOneWorkspace(
         team: employees.team,
         teamUnitId: employees.teamUnitId,
         status: employees.status,
+        invited: employeeInvitedField(),
         managerId: employees.managerId,
         probationEnd: employees.probationEnd,
       })
@@ -85,11 +88,12 @@ export async function getOneOnOneWorkspace(
   ]);
 
   const allPeople = people as PersonRow[];
+  // Not invited people are visible only to people managers (HR / Super Admin).
   const scopedPeople = allPeople.filter(
     (person) =>
       access.managePeople ||
       person.id === user.employeeId ||
-      person.managerId === user.employeeId,
+      (person.managerId === user.employeeId && person.invited),
   );
   const scopedIds = scopedPeople.map((person) => person.id);
   const peopleById = new Map(allPeople.map((person) => [person.id, person]));
@@ -183,13 +187,10 @@ export async function getOneOnOneWorkspace(
       {
         id: team.id,
         name: team.name,
-        memberCount: members.filter((member) => member.status === "active")
-          .length,
+        memberCount: members.filter((member) => isActivePerson(member)).length,
         recipientUserIds: members.flatMap((member) => {
           const account = usersByEmployee.get(member.id);
-          return member.status === "active" && account?.enabled
-            ? [account.id]
-            : [];
+          return isActivePerson(member) && account?.enabled ? [account.id] : [];
         }),
       },
     ];
@@ -371,7 +372,7 @@ export async function getOneOnOneWorkspace(
   });
 
   const recipientOptions = scopedPeople
-    .filter((person) => person.status === "active")
+    .filter((person) => isActivePerson(person))
     .flatMap((person) => {
       const account = usersByEmployee.get(person.id);
       return account?.enabled
@@ -393,8 +394,15 @@ export async function getOneOnOneWorkspace(
 
   return {
     plans,
+    // People a 1:1 can be set up and recorded for. HR may do this for
+    // newcomers before their invitation; scopedPeople already hides not
+    // invited people from everyone else.
     people: scopedPeople
-      .filter((person) => person.status === "active")
+      .filter(
+        (person) =>
+          isActivePerson(person) ||
+          (access.managePeople && person.status === "active"),
+      )
       .map((person) => ({
         id: person.id,
         firstName: person.firstName,
@@ -418,4 +426,9 @@ export async function getOneOnOneWorkspace(
     today,
     readOnlyPreview: user.isPreview === true,
   };
+}
+
+/** Employed and invited to the system; see modules/people/active.ts. */
+function isActivePerson(person: { status: string; invited: boolean }) {
+  return person.status === "active" && person.invited;
 }

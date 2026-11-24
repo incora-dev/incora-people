@@ -9,6 +9,7 @@ import type { CurrentUser } from "@/lib/auth";
 import type { TerminateEmployeeInput } from "@/modules/people/contracts";
 import { ApplicationError } from "@/modules/shared/application-error";
 import { getDateContext } from "@/modules/shared/date";
+import { activeEmployeeCondition } from "@/modules/people/active";
 
 export async function terminateEmployee(
   actor: CurrentUser,
@@ -74,7 +75,7 @@ export async function terminateEmployee(
     const [target] = await db
       .select({ id: employees.id })
       .from(employees)
-      .where(and(eq(employees.id, transferId), eq(employees.status, "active")))
+      .where(and(eq(employees.id, transferId), activeEmployeeCondition()))
       .limit(1);
     if (!target)
       throw new ApplicationError(

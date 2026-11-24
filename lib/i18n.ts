@@ -430,6 +430,8 @@ const uk = {
   "Employee status filter": "Фільтр статусу працевлаштування",
   "Active employees": "Активні",
   "Terminated employees": "Звільнені",
+  "Not invited": "Не запрошено",
+  "Not invited employees": "Незапрошені",
   "All employees": "Усі",
   "Sort employees": "Сортувати працівників",
   "Name: A–Z": "Ім’я: А–Я",

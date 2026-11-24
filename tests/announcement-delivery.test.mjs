@@ -367,7 +367,7 @@ test("announcement flow filters recipients, respects archive/expiry, and prefers
   const adminSettings = await source(
     "components/admin/HomeContentSettings.tsx",
   );
-  assert.match(delivery, /eq\(employees\.status, "active"\)/);
+  assert.match(delivery, /activeEmployeeCondition\(\)/);
   assert.match(delivery, /eq\(users\.enabled, true\)/);
   assert.match(
     delivery,
@@ -378,7 +378,12 @@ test("announcement flow filters recipients, respects archive/expiry, and prefers
   assert.match(delivery, /config\.emailWebhookUrl/);
   assert.match(delivery, /eq\(announcementDeliveries\.attempts, 0\)/);
   assert.match(delivery, /"uncertain"/);
-  assert.match(delivery, /eq\(employees\.status, "active"\)/);
+  const active = await source("modules/people/active.ts");
+  assert.match(
+    active,
+    /and\(eq\(employees\.status, "active"\), employeeInvitedCondition\(\)\)/,
+    "announcements go only to employees who were invited",
+  );
   assert.match(delivery, /eq\(announcements\.active, true\)/);
   assert.match(delivery, /announcements\.expiresAt/);
   assert.match(runtime, /RESEND_API_KEY/);

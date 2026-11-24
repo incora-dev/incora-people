@@ -2,6 +2,7 @@ import { and, asc, eq, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { employees, peopleTasks } from "@/db/schema";
 import type { AccessPolicy, CurrentUser } from "@/lib/auth";
+import { activeEmployeeCondition } from "@/modules/people/active";
 
 export async function getTaskWorkspaceData(
   user: CurrentUser,
@@ -60,8 +61,8 @@ export async function getTaskWorkspaceData(
     .from(employees)
     .where(
       assigneeScope
-        ? and(eq(employees.status, "active"), assigneeScope)
-        : eq(employees.status, "active"),
+        ? and(activeEmployeeCondition(), assigneeScope)
+        : activeEmployeeCondition(),
     )
     .orderBy(employees.firstName, employees.lastName);
 

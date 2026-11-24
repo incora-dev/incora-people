@@ -1785,7 +1785,12 @@ test("People directory provides lifecycle and sorting controls without exposing 
   assert.match(directory, /name-desc/);
   assert.match(directory, /tenure-desc/);
   assert.match(directory, /tenure-asc/);
-  assert.match(directory, /lifecycleStatus !== "terminated"/);
+  assert.match(
+    directory,
+    /isActiveLifecycleStage\(employee\.lifecycleStatus\)/,
+  );
+  assert.match(directory, /value="awaiting_invitation"/);
+  assert.match(directory, /canViewNotInvited &&/);
   assert.match(directory, /aria-pressed=\{lifecycleFilter === value\}/);
   assert.match(directory, /setAdvancedIds\(null\)/);
   assert.match(directory, /employmentCycleFilter/);
@@ -1883,5 +1888,88 @@ test("employment cycle is a canonical lifecycle stage, not numbered periods", as
   assert.doesNotMatch(
     actions,
     /canRehire|\/api\/employees\/\$\{employee\.id\}\/rehire/,
+  );
+});
+
+test("employees without people management never receive not-invited people", async () => {
+  const read = (path) =>
+    readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  const [
+    queries,
+    directoryPage,
+    profile,
+    search,
+    org,
+    v1People,
+    v1Person,
+    v1Org,
+  ] = await Promise.all([
+    read("modules/people/queries.ts"),
+    read("app/employees/page.tsx"),
+    read("app/employees/[id]/page.tsx"),
+    read("app/api/search/route.ts"),
+    read("app/org/page.tsx"),
+    read("app/api/v1/people/route.ts"),
+    read("app/api/v1/people/[id]/route.ts"),
+    read("app/api/v1/organization/route.ts"),
+  ]);
+  assert.match(
+    queries,
+    /options\.includeNotInvited \? undefined : employeeInvitedCondition\(\)/,
+  );
+  for (const source of [directoryPage, search, org, v1People, v1Person, v1Org])
+    assert.match(source, /canViewNotInvitedEmployees\(access\)/);
+  assert.match(
+    profile,
+    /!isSelf &&\s*!canViewNotInvitedEmployees\(access\) &&\s*!\(await isEmployeeInvited\(employee\.id\)\)/,
+  );
+});
+
+test("assets can be assigned to employed newcomers before their invitation", async () => {
+  const read = (path) =>
+    readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  const [route, queries] = await Promise.all([
+    read("app/api/assets/route.ts"),
+    read("modules/assets/queries.ts"),
+  ]);
+  for (const source of [route, queries]) {
+    assert.doesNotMatch(source, /activeEmployeeCondition/);
+  }
+  assert.match(route, /return employee\?\.status === "active";/);
+  assert.match(queries, /\.where\(eq\(employees\.status, "active"\)\)/);
+});
+
+test("HR 1:1 plans include newcomers, while managers do not see not-invited reports", async () => {
+  const read = (path) =>
+    readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  const [route, queries] = await Promise.all([
+    read("app/api/one-on-one/route.ts"),
+    read("modules/one-on-one/queries.ts"),
+  ]);
+  const sync = route.slice(route.indexOf("async function syncHrPlans("));
+  assert.match(
+    sync.slice(0, sync.indexOf("activeRules")),
+    /\.where\(eq\(employees\.status, "active"\)\)/,
+  );
+  assert.match(
+    queries,
+    /person\.managerId === user\.employeeId && person\.invited/,
+  );
+});
+
+test("HR can set up and record 1:1s for newcomers; managers cannot before the invitation", async () => {
+  const read = (path) =>
+    readFile(new URL(`../${path}`, import.meta.url), "utf8");
+  const [route, queries] = await Promise.all([
+    read("app/api/one-on-one/route.ts"),
+    read("modules/one-on-one/queries.ts"),
+  ]);
+  assert.match(
+    queries,
+    /isActivePerson\(person\) \|\|\s*\(access\.managePeople && person\.status === "active"\)/,
+  );
+  assert.match(
+    route,
+    /return employee\?\.managerId === user\.employeeId && employee\.invited;/,
   );
 });

@@ -23,6 +23,7 @@ import {
   getEmployee,
   getEmployeeHistory,
   getEmployeeTermination,
+  isEmployeeInvited,
   getEmployeeManagerOptions,
   getEmployeeProfileRecords,
   getEmployeePrivateDetails,
@@ -59,7 +60,10 @@ import {
   calculateTotalExperienceDays,
   formatEmployeeTenure,
 } from "@/modules/people/tenure";
-import { getEmployeeLifecycleStage } from "@/modules/people/directory";
+import {
+  canViewNotInvitedEmployees,
+  getEmployeeLifecycleStage,
+} from "@/modules/people/directory";
 import { getTerminationReasonCatalog } from "@/modules/people/lifecycle";
 import {
   calculatePreviousExperienceDays,
@@ -105,6 +109,13 @@ export default async function EmployeeProfile({
   const canEditEmployee = access.managePeople && !isPreview;
   const isSelf = user.employeeId === employee.id;
   const isDirectManager = user.employeeId === employee.managerId;
+  if (
+    !isSelf &&
+    !canViewNotInvitedEmployees(access) &&
+    !(await isEmployeeInvited(employee.id))
+  ) {
+    notFound();
+  }
   const canViewSensitive = canReadEmployeeSensitiveData(
     employee.id,
     user.employeeId,
@@ -135,6 +146,7 @@ export default async function EmployeeProfile({
     compensationItems,
     accountAccess,
     invitationSummary,
+    invited,
   ] = await Promise.all([
     canViewSensitive ? getEmployeeHistory(employee.id) : Promise.resolve([]),
     canViewLeave
@@ -175,6 +187,7 @@ export default async function EmployeeProfile({
     access.managePeople && !isPreview
       ? getEmployeeInvitationSummary(employee.id)
       : Promise.resolve(null),
+    isEmployeeInvited(employee.id),
   ]);
   const visibleRelationships = isPreview
     ? {
@@ -212,6 +225,7 @@ export default async function EmployeeProfile({
     employee.status,
     employee.probationEnd,
     today,
+    invited,
   );
   const lastStateChange = latestEmploymentStateChangeDate(
     history,
@@ -282,12 +296,20 @@ export default async function EmployeeProfile({
         canEdit={!isPreview && (access.managePeople || isSelf)}
       >
         <div className="profile-title">
-          <span className={`status-badge ${employee.status}`}>
-            {employee.status === "on_leave"
-              ? t("On leave")
-              : employee.status === "inactive"
-                ? t("Inactive")
-                : t("Active")}
+          <span
+            className={`status-badge ${
+              employee.status !== "inactive" && !invited
+                ? "awaiting_invitation"
+                : employee.status
+            }`}
+          >
+            {employee.status === "inactive"
+              ? t("Inactive")
+              : !invited
+                ? t("Not invited")
+                : employee.status === "on_leave"
+                  ? t("On leave")
+                  : t("Active")}
           </span>
           <h1>
             {employee.firstName} {employee.lastName}
@@ -758,11 +780,13 @@ export default async function EmployeeProfile({
                             value={t(
                               lifecycleStage === "working"
                                 ? "Working"
-                                : lifecycleStage === "probation"
-                                  ? "Probation"
-                                  : lifecycleStage === "on_leave"
-                                    ? "On leave"
-                                    : "Terminated",
+                                : lifecycleStage === "awaiting_invitation"
+                                  ? "Not invited"
+                                  : lifecycleStage === "probation"
+                                    ? "Probation"
+                                    : lifecycleStage === "on_leave"
+                                      ? "On leave"
+                                      : "Terminated",
                             )}
                           />
                           <Detail

@@ -155,6 +155,11 @@ export async function PATCH(request: Request) {
   return Response.json({ asset });
 }
 
+/**
+ * Assets are an exception to "not invited is not active": equipment is often
+ * prepared before a newcomer is invited, so any employed (status 'active')
+ * person qualifies, invited or not. Terminated employees still do not.
+ */
 async function isActiveEmployee(employeeId: number) {
   const [employee] = await getDb()
     .select({ status: employees.status })

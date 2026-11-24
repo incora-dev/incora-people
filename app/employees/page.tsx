@@ -13,7 +13,10 @@ import {
 import { getServerI18n } from "@/lib/i18n-server";
 import { getEmployeeDefaults } from "@/modules/settings/system";
 import { getDateContext } from "@/modules/shared/date";
-import { canViewInactiveEmployees } from "@/modules/people/directory";
+import {
+  canViewInactiveEmployees,
+  canViewNotInvitedEmployees,
+} from "@/modules/people/directory";
 
 export const metadata: Metadata = { title: "People" };
 
@@ -24,9 +27,12 @@ export default async function EmployeesPage({
 }) {
   const { t } = await getServerI18n();
   const user = await getCurrentUser();
+  const access = await getAccessPolicy(user);
   const canViewInactive = canViewInactiveEmployees(user.role);
+  const canViewNotInvited = canViewNotInvitedEmployees(access);
   const employees = await getEmployeeDirectory({
     includeInactive: canViewInactive,
+    includeNotInvited: canViewNotInvited,
   });
   const directoryEmployees = employees.map((employee) => ({
     id: employee.id,
@@ -51,7 +57,6 @@ export default async function EmployeesPage({
     lastWorkingDay: canViewInactive ? employee.lastWorkingDay : null,
     photoFileId: user.isPreview ? null : employee.photoFileId,
   }));
-  const access = await getAccessPolicy(user);
   const { today } = getDateContext();
   const [orgUnits, referenceValues, defaults] = access.managePeople
     ? await Promise.all([
@@ -82,6 +87,7 @@ export default async function EmployeesPage({
       <EmployeeDirectory
         employees={directoryEmployees}
         canViewInactive={canViewInactive}
+        canViewNotInvited={canViewNotInvited}
         canCreate={access.managePeople && !user.isPreview}
         canExport={hasOrganizationScope(user) && !user.isPreview}
         orgUnits={orgUnits}

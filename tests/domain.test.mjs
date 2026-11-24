@@ -1557,3 +1557,41 @@ test("timer start labels use the employee timezone across seasons and midnight",
     "03:00",
   );
 });
+
+test("not invited profiles are counted separately from active employees", () => {
+  const employees = [
+    directoryEmployee(1, "Alex", "Morgan"),
+    directoryEmployee(2, "Bohdan", "Pending", {
+      lifecycleStatus: getEmployeeLifecycleStage(
+        "active",
+        null,
+        "2026-11-24",
+        false,
+      ),
+    }),
+    directoryEmployee(3, "Chris", "Gone", { lifecycleStatus: "terminated" }),
+  ];
+  assert.equal(employees[1].lifecycleStatus, "awaiting_invitation");
+  assert.equal(
+    getEmployeeLifecycleStage("inactive", null, "2026-11-24", false),
+    "terminated",
+    "termination wins over a missing invitation",
+  );
+  const ids = (lifecycle, employmentCycle) =>
+    filterEmployeeDirectoryItems(employees, {
+      lifecycle,
+      employmentCycle,
+      locale: "en",
+    }).map((employee) => employee.id);
+  assert.deepEqual(ids("active"), [1]);
+  assert.deepEqual(ids("awaiting_invitation"), [2]);
+  assert.deepEqual(ids("all", "awaiting_invitation"), [2]);
+  assert.deepEqual(ids("all"), [1, 2, 3]);
+});
+
+test("only people managers can see employees who were not invited yet", async () => {
+  const { canViewNotInvitedEmployees } =
+    await import("../modules/people/directory.ts");
+  assert.equal(canViewNotInvitedEmployees({ managePeople: true }), true);
+  assert.equal(canViewNotInvitedEmployees({ managePeople: false }), false);
+});

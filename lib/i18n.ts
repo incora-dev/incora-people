@@ -736,8 +736,8 @@ const uk = {
     "Не можна видалити власний обліковий запис.",
   "Protected administrator identities cannot be deleted.":
     "Не можна видалити захищені облікові записи адміністраторів.",
-  "Only an active ordinary employee record can be permanently deleted.":
-    "Назавжди можна видалити лише активний профіль звичайного працівника.",
+  "Only an ordinary employee record can be permanently deleted.":
+    "Назавжди можна видалити лише профіль звичайного працівника.",
   "The employee and account relationship is missing or ambiguous.":
     "Зв’язок між профілем працівника й обліковим записом відсутній або неоднозначний.",
   "This employee has missing, changed, or additional employment history and cannot be permanently deleted.":

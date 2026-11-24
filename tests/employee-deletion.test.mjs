@@ -17,7 +17,6 @@ function eligibleCandidate(overrides = {}) {
     targetRole: "employee",
     employeeEmail: "accidental.person@incora.com",
     employeeCode: "INC-104",
-    targetStatus: "active",
     accountMatchesEmployee: true,
     protectedIdentity: false,
     pristineInitialHistory: true,
@@ -124,6 +123,10 @@ test("employee deletion rejects self, protected, linked and changed HR records",
     "employee_only",
   );
   assert.equal(
+    employeeDeletionBlocker(eligibleCandidate({ targetRole: "manager" })),
+    "employee_only",
+  );
+  assert.equal(
     employeeDeletionBlocker(eligibleCandidate({ blockedReferenceCount: 1 })),
     "linked_records",
   );
@@ -221,7 +224,8 @@ test("employee deletion route rechecks Super Admin, fresh auth and atomic blocke
   assert.match(route, /blockerCategories: references\.blockerCategories/);
   assert.match(route, /employee\.employeeCode/);
   assert.match(route, /employee\.email/);
-  assert.match(route, /employee\.status/);
+  assert.match(route, /employeeStatus: employee\.status/);
+  assert.doesNotMatch(route, /e\.status='active'/);
   assert.match(route, /employee\.permanently_deleted/);
   assert.match(route, /DELETE FROM web_sessions WHERE user_id=\?/);
   assert.match(route, /DELETE FROM client_sessions WHERE \(user_id=\?/);

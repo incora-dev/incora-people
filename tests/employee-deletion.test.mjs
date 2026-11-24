@@ -186,6 +186,30 @@ test("employee deletion fails closed for unrecognized foreign-key references", (
     "preview-session-cleanup",
   );
   assert.equal(
+    classifyEmployeeDeletionReference({
+      parent: "employees",
+      table: "employee_invitation_attempts",
+      column: "employee_id",
+    }),
+    "invitation-audit-retained",
+  );
+  assert.equal(
+    classifyEmployeeDeletionReference({
+      parent: "users",
+      table: "employee_invitation_attempts",
+      column: "account_user_id",
+    }),
+    "invitation-audit-retained",
+  );
+  assert.equal(
+    classifyEmployeeDeletionReference({
+      parent: "users",
+      table: "employee_invitation_attempts",
+      column: "actor_user_id",
+    }),
+    "blocked",
+  );
+  assert.equal(
     employeeDeletionReferenceCategory({
       parent: "employees",
       table: "employee_compensations",
@@ -226,6 +250,14 @@ test("employee deletion route rechecks Super Admin, fresh auth and atomic blocke
   assert.match(route, /employee\.email/);
   assert.match(route, /employeeStatus: employee\.status/);
   assert.doesNotMatch(route, /e\.status='active'/);
+  assert.match(
+    route,
+    /employee_invitation_attempts WHERE employee_id=\? AND status IN \('sending','uncertain'\)/,
+  );
+  assert.match(
+    route,
+    /invitation\.employee_id=e\.id\s+AND invitation\.status IN \('sending','uncertain'\)/,
+  );
   assert.match(route, /employee\.permanently_deleted/);
   assert.match(route, /DELETE FROM web_sessions WHERE user_id=\?/);
   assert.match(route, /DELETE FROM client_sessions WHERE \(user_id=\?/);
@@ -329,6 +361,46 @@ test("protected linked history prevents deletion without partial cleanup", () =>
         .get().count,
       1,
     );
+    assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
+  } finally {
+    db.close();
+  }
+});
+
+test("deleting an invited employee keeps the invitation audit row", async () => {
+  const migration = await readFile(
+    new URL("../migrations/0071_employee_invitations.sql", import.meta.url),
+    "utf8",
+  );
+  const db = new DatabaseSync(":memory:");
+  try {
+    db.exec(`
+      PRAGMA foreign_keys=ON;
+      CREATE TABLE employees(id INTEGER PRIMARY KEY);
+      CREATE TABLE users(id INTEGER PRIMARY KEY, employee_id INTEGER UNIQUE REFERENCES employees(id));
+    `);
+    db.exec(migration);
+    db.exec(`
+      INSERT INTO employees VALUES (1),(2);
+      INSERT INTO users(id,employee_id) VALUES (10,1),(20,2);
+      INSERT INTO employee_invitation_attempts
+        (id,employee_id,account_user_id,target_email,status,payload_json,requested_at,updated_at,accepted_at,actor_user_id,actor_email)
+        VALUES ('synthetic-sent',2,20,'synthetic@example.test','sent','{}','2026-01-01','2026-01-01','2026-01-01',10,'admin@example.test');
+    `);
+    db.exec("BEGIN");
+    db.exec("DELETE FROM users WHERE id=20 AND employee_id=2");
+    db.exec("DELETE FROM employees WHERE id=2");
+    db.exec("COMMIT");
+
+    const attempt = db
+      .prepare(
+        "SELECT employee_id, account_user_id, actor_user_id, status FROM employee_invitation_attempts WHERE id='synthetic-sent'",
+      )
+      .get();
+    assert.equal(attempt.employee_id, null);
+    assert.equal(attempt.account_user_id, null);
+    assert.equal(attempt.actor_user_id, 10);
+    assert.equal(attempt.status, "sent");
     assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   } finally {
     db.close();

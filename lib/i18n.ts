@@ -760,6 +760,7 @@ const uk = {
   "Manager or reporting relationships": "Зв’язки керівника та підлеглих",
   "Employee profile records": "Додаткові кадрові записи профілю",
   "Pending notification records": "Необроблені сповіщення",
+  "Invitation delivery in progress": "Запрошення ще надсилається",
   "Account-linked records": "Інші записи облікового запису",
   "Other linked business records": "Інші пов’язані робочі записи",
   "Confirm that this is an erroneous or test employee and type the employee name exactly.":

@@ -2997,8 +2997,20 @@ test("0071 invitation migration upgrades the 0070 schema without rewriting HR, i
     );
     assert.equal(
       invited(newEmployeeId),
+      false,
+      "signing in without an invitation does not activate the profile",
+    );
+    db.prepare("UPDATE users SET role='super_admin' WHERE id=?").run(newUserId);
+    assert.equal(
+      invited(newEmployeeId),
       true,
-      "a person who already signed in is not shown as awaiting an invitation",
+      "a Super Admin cannot be invited and is always active",
+    );
+    db.prepare("UPDATE users SET role='hr_admin' WHERE id=?").run(newUserId);
+    assert.equal(
+      invited(newEmployeeId),
+      false,
+      "an HR administrator still needs an invitation",
     );
     assert.throws(
       () =>

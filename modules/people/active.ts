@@ -2,7 +2,7 @@ import { and, eq, sql, type SQL } from "drizzle-orm";
 import { employees } from "@/db/schema";
 import { employeeInvitedSql } from "@/modules/people/activation";
 
-/** True when the employee was invited (or has already signed in). */
+/** True when the employee was invited, or has a Super Admin account that cannot be invited. */
 export function employeeInvitedCondition(): SQL {
   return sql`${sql.raw(employeeInvitedSql('"employees"."id"'))}`;
 }

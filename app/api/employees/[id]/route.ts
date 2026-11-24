@@ -653,6 +653,20 @@ async function employeeDeletionReferences(
     blockerCategories.add("Pending notification records");
   }
 
+  // A sent or failed invitation is a retained audit row, but a delivery that is
+  // still in flight would race the deletion, so it blocks until it settles.
+  const openInvitation = await d1
+    .prepare(
+      "SELECT COUNT(*) AS count FROM employee_invitation_attempts WHERE employee_id=? AND status IN ('sending','uncertain')",
+    )
+    .bind(employeeId)
+    .first<{ count: number }>();
+  const openInvitationCount = Number(openInvitation?.count ?? 0);
+  blockedReferenceCount += openInvitationCount;
+  if (openInvitationCount > 0) {
+    blockerCategories.add("Invitation delivery in progress");
+  }
+
   return {
     blockedReferenceCount,
     blockedReferences,
@@ -725,6 +739,11 @@ function buildDeletionGuard(
         AND NOT EXISTS (
           SELECT 1 FROM notification_outbox outbox
           WHERE lower(outbox.user_email)=lower(e.email)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM employee_invitation_attempts invitation
+          WHERE invitation.employee_id=e.id
+            AND invitation.status IN ('sending','uncertain')
         )
         AND ${balancedDeletionChecks(referenceChecks)}
     )`,

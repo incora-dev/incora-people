@@ -19,11 +19,15 @@ export type EmployeeDeletionReferenceDisposition =
   | "routine-profile-metadata-cleanup"
   | "preview-session-cleanup"
   | "account-session-cleanup"
+  | "invitation-audit-retained"
   | "blocked";
 
 /**
  * Only generated session artifacts, the pristine registration history, unused
- * leave balances, and skill metadata are cleanup-safe. Every other FK blocks.
+ * leave balances, and skill metadata are cleanup-safe. Invitation attempts are
+ * retained as an audit trail: their FKs are ON DELETE SET NULL, so a sent
+ * invitation (an activated profile) does not block deletion. Every other FK
+ * blocks.
  */
 export function classifyEmployeeDeletionReference(
   reference: EmployeeDeletionForeignKey,
@@ -43,6 +47,10 @@ export function classifyEmployeeDeletionReference(
     "users.oauth_authorization_codes.user_id": "account-session-cleanup",
     "users.mobile_push_tokens.user_id": "account-session-cleanup",
     "users.notifications.user_id": "account-session-cleanup",
+    "employees.employee_invitation_attempts.employee_id":
+      "invitation-audit-retained",
+    "users.employee_invitation_attempts.account_user_id":
+      "invitation-audit-retained",
   };
   return allowed[key] ?? "blocked";
 }
@@ -79,6 +87,9 @@ export function employeeDeletionReferenceCategory(
   }
   if (table === "notification_outbox") {
     return "Pending notification records";
+  }
+  if (table === "employee_invitation_attempts") {
+    return "Invitation delivery in progress";
   }
   if (reference.parent === "users") return "Account-linked records";
   return "Other linked business records";

@@ -73,11 +73,17 @@ export function InventoryWorkspace({
   canManage,
   isSuperAdmin,
   readOnlyPreview = false,
+  people = [],
+  orgUnits = { divisions: [], departments: [] },
 }: {
   initialData: InventorySnapshot;
   canManage: boolean;
   isSuperAdmin: boolean;
   readOnlyPreview?: boolean;
+  /** Current employees an item can be handed to (managers only). */
+  people?: { id: number; firstName: string; lastName: string }[];
+  /** Division and department choices for the item form (managers only). */
+  orgUnits?: { divisions: string[]; departments: string[] };
 }) {
   const { t } = useI18n();
   const [data, setData] = useState(initialData);
@@ -98,6 +104,7 @@ export function InventoryWorkspace({
   const [modal, setModal] = useState<ModalKind>(null);
   const [commandRequestId, setCommandRequestId] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
+  const [itemGroupId, setItemGroupId] = useState<number | null>(null);
   const [correctionTarget, setCorrectionTarget] =
     useState<CorrectionTarget | null>(null);
   const [dateValue, setDateValue] = useState(getDateContext().today);
@@ -258,6 +265,12 @@ export function InventoryWorkspace({
     if (readOnlyPreview) return;
     setError("");
     setEditId(id ?? null);
+    if (kind === "item")
+      setItemGroupId(
+        (id ? data.items.find((entry) => entry.id === id)?.groupId : null) ??
+          selectedGroup?.id ??
+          null,
+      );
     if (kind === "count") {
       setCountScope(scope ?? null);
       setCountItemIds(scope?.type === "item" ? [scope.id] : []);
@@ -331,9 +344,37 @@ export function InventoryWorkspace({
         sku: val("sku"),
         name: val("name"),
         description: val("description"),
-        unit: val("unit") || "шт.",
+        // The unit is not editable here: keep the stored one (it cannot change
+        // once the item has stock history) and default new items to "шт.".
+        unit:
+          (editId
+            ? data.items.find((entry) => entry.id === editId)?.unit
+            : null) ?? "шт.",
         active: form.get("active") === "on",
         nextInventoryDate: dateValue || null,
+        ...(canManage
+          ? {
+              assetDetails: {
+                serialNumber: val("serialNumber"),
+                price: val("price"),
+                division: val("division"),
+                department: val("department"),
+                warrantyEnds: val("warrantyEnds") || null,
+                repairHistory: val("repairHistory"),
+                attributes: mergeAttributes(
+                  ASSET_SPEC_FIELDS.filter(
+                    (spec) => form.get(spec.name) !== null,
+                  ).map((spec) => ({
+                    label: spec.label,
+                    value: val(spec.name),
+                  })),
+                  parseAttributeLines(val("attributes")),
+                ),
+                ...parseHolder(val("holder")),
+                assignedSince: val("assignedSince") || null,
+              },
+            }
+          : {}),
       };
     if (modal === "receipt" || modal === "decrease" || modal === "transfer") {
       const item = selectedItem;
@@ -520,7 +561,10 @@ export function InventoryWorkspace({
   ) {
     return (
       <label key={name}>
-        {t(label)}
+        <span>
+          {t(label)}
+          {required && <RequiredMark />}
+        </span>
         <input
           name={name}
           type={type}
@@ -1618,7 +1662,10 @@ export function InventoryWorkspace({
               <>
                 {modal === "group" && (
                   <label>
-                    {t("Category")}
+                    <span>
+                      {t("Category")}
+                      <RequiredMark />
+                    </span>
                     <select
                       name="categoryId"
                       defaultValue={String(selectedCategory?.id ?? "")}
@@ -1634,10 +1681,18 @@ export function InventoryWorkspace({
                 )}
                 {modal === "item" && (
                   <label>
-                    {t("Group")}
+                    <span>
+                      {t("Group")}
+                      <RequiredMark />
+                    </span>
                     <select
                       name="groupId"
-                      defaultValue={String(selectedGroup?.id ?? "")}
+                      defaultValue={String(
+                        itemGroupId ?? selectedGroup?.id ?? "",
+                      )}
+                      onChange={(event) =>
+                        setItemGroupId(Number(event.target.value))
+                      }
                       required
                     >
                       {data.groups
@@ -1723,13 +1778,6 @@ export function InventoryWorkspace({
                       "description",
                       editingItem?.description ?? "",
                     )}
-                    {field(
-                      "Unit",
-                      "unit",
-                      editingItem?.unit ?? "шт.",
-                      "text",
-                      true,
-                    )}
                     <div className="inventory-date-field">
                       <DateField
                         name="next-inventory-date"
@@ -1742,6 +1790,18 @@ export function InventoryWorkspace({
                         onValueChange={setDateValue}
                       />
                     </div>
+                    {canManage && (
+                      <InventoryAssetFields
+                        key={editingItem?.id ?? "new"}
+                        asset={editingItem?.asset}
+                        people={people}
+                        orgUnits={orgUnits}
+                        groupName={
+                          data.groups.find((group) => group.id === itemGroupId)
+                            ?.name ?? ""
+                        }
+                      />
+                    )}
                   </>
                 )}
                 <label
@@ -1773,11 +1833,14 @@ export function InventoryWorkspace({
                     {selectedItem.unit}
                   </p>
                   <label>
-                    {t(
-                      modal === "transfer"
-                        ? "From storage location"
-                        : "Storage location",
-                    )}
+                    <span>
+                      {t(
+                        modal === "transfer"
+                          ? "From storage location"
+                          : "Storage location",
+                      )}
+                      <RequiredMark />
+                    </span>
                     <select name="sourceLocationId" defaultValue="" required>
                       <option value="" disabled>
                         {t("Select location")}
@@ -1795,7 +1858,10 @@ export function InventoryWorkspace({
                   </label>
                   {modal === "transfer" && (
                     <label>
-                      {t("To storage location")}
+                      <span>
+                        {t("To storage location")}
+                        <RequiredMark />
+                      </span>
                       <select
                         name="destinationLocationId"
                         defaultValue=""
@@ -1831,7 +1897,10 @@ export function InventoryWorkspace({
                   {countCategory ? ` · ${countCategory.name}` : ""}
                 </p>
                 <label>
-                  {t("Storage location")}
+                  <span>
+                    {t("Storage location")}
+                    <RequiredMark />
+                  </span>
                   <select
                     name="locationId"
                     value={countLocationId ?? ""}
@@ -1992,6 +2061,7 @@ export function InventoryWorkspace({
                     label={t("Count date")}
                     value={dateValue}
                     required
+                    requiredMark
                     onValueChange={setDateValue}
                   />
                 </div>
@@ -2014,7 +2084,10 @@ export function InventoryWorkspace({
                   true,
                 )}
                 <label className="span-two">
-                  {t("Correction reason")}
+                  <span>
+                    {t("Correction reason")}
+                    <RequiredMark />
+                  </span>
                   <textarea name="reason" rows={3} required minLength={5} />
                 </label>
                 <p className="inventory-dialog-hint span-two">
@@ -2118,5 +2191,215 @@ export function InventoryWorkspace({
         </DialogBackdrop>
       )}
     </div>
+  );
+}
+
+/**
+ * Characteristics with their own field, by inventory group. Values are stored
+ * as item attributes under these labels; anything else goes to the optional
+ * "additional characteristics" text.
+ */
+const ASSET_SPEC_FIELDS = [
+  { name: "specDiagonal", label: "Діагональ", groups: ["Ноутбук", "Монітор"] },
+  { name: "specProcessor", label: "Процесор", groups: ["Ноутбук"] },
+  { name: "specMemory", label: "Пам’ять", groups: ["Ноутбук"] },
+  { name: "specYear", label: "Рік", groups: ["Ноутбук"] },
+  { name: "specSsd", label: "SSD", groups: ["Ноутбук"] },
+] as const;
+
+/** Parses "Label: value" lines into item characteristics. */
+function parseAttributeLines(text: string) {
+  return text
+    .split("\n")
+    .map((line) => {
+      const separator = line.indexOf(":");
+      return separator < 0
+        ? null
+        : {
+            label: line.slice(0, separator).trim(),
+            value: line.slice(separator + 1).trim(),
+          };
+    })
+    .filter((item): item is { label: string; value: string } =>
+      Boolean(item?.label && item.value),
+    );
+}
+
+/** Dedicated fields win over the same label typed in the free text. */
+function mergeAttributes(
+  fields: { label: string; value: string }[],
+  extra: { label: string; value: string }[],
+) {
+  const labels = new Set(fields.map((item) => item.label));
+  return [
+    ...fields.filter((item) => item.value),
+    ...extra.filter((item) => !labels.has(item.label)),
+  ];
+}
+
+/** "employee:<id>" or "name:<text>" from the holder dropdown. */
+function parseHolder(value: string) {
+  if (value.startsWith("employee:"))
+    return {
+      assignedEmployeeId: Number(value.slice("employee:".length)),
+      assigneeName: "",
+    };
+  if (value.startsWith("name:"))
+    return { assignedEmployeeId: null, assigneeName: value.slice(5) };
+  return { assignedEmployeeId: null, assigneeName: "" };
+}
+
+/** Choices plus the current value when it is not among them. */
+function withCurrent(options: string[], current?: string) {
+  return current && !options.includes(current)
+    ? [...options, current]
+    : options;
+}
+
+function InventoryAssetFields({
+  asset,
+  people,
+  orgUnits,
+  groupName,
+}: {
+  asset?: InventoryItemDto["asset"];
+  people: { id: number; firstName: string; lastName: string }[];
+  orgUnits: { divisions: string[]; departments: string[] };
+  groupName: string;
+}) {
+  const { t } = useI18n();
+  const attributes = asset?.attributes ?? [];
+  const specs = ASSET_SPEC_FIELDS.filter((spec) =>
+    (spec.groups as readonly string[]).includes(groupName),
+  );
+  const specLabels = new Set<string>(
+    ASSET_SPEC_FIELDS.map((spec) => spec.label),
+  );
+  const holder = asset?.assignedEmployeeId
+    ? `employee:${asset.assignedEmployeeId}`
+    : asset?.assigneeName
+      ? `name:${asset.assigneeName}`
+      : "";
+  const holderPeople =
+    asset?.assignedEmployeeId &&
+    !people.some((person) => person.id === asset.assignedEmployeeId)
+      ? [
+          ...people,
+          {
+            id: asset.assignedEmployeeId,
+            firstName: asset.assignedEmployeeName ?? "",
+            lastName: "",
+          },
+        ]
+      : people;
+  return (
+    <fieldset className="inventory-asset-fields span-two">
+      <legend>{t("Asset details")}</legend>
+      <label>
+        {t("Serial number")}
+        <input name="serialNumber" defaultValue={asset?.serialNumber ?? ""} />
+      </label>
+      <label>
+        {t("Price")}
+        <input name="price" defaultValue={asset?.price ?? ""} />
+      </label>
+      {specs.map((spec) => (
+        <label key={spec.name}>
+          {spec.label}
+          <input
+            name={spec.name}
+            defaultValue={
+              attributes.find((item) => item.label === spec.label)?.value ?? ""
+            }
+          />
+        </label>
+      ))}
+      <label>
+        {t("Division")}
+        <select name="division" defaultValue={asset?.division ?? ""}>
+          <option value="">{t("Not specified")}</option>
+          {withCurrent(orgUnits.divisions, asset?.division).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t("Department")}
+        <select name="department" defaultValue={asset?.department ?? ""}>
+          <option value="">{t("Not specified")}</option>
+          {withCurrent(orgUnits.departments, asset?.department).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t("Assigned to")}
+        <select name="holder" defaultValue={holder}>
+          <option value="">{t("Not assigned")}</option>
+          {holderPeople.map((person) => (
+            <option key={person.id} value={`employee:${person.id}`}>
+              {`${person.firstName} ${person.lastName}`.trim()}
+            </option>
+          ))}
+          {asset?.assigneeName && (
+            <option value={`name:${asset.assigneeName}`}>
+              {asset.assigneeName} ({t("not in the system")})
+            </option>
+          )}
+        </select>
+      </label>
+      <label>
+        {t("Assigned since")}
+        <input
+          name="assignedSince"
+          type="date"
+          defaultValue={asset?.assignedSince ?? ""}
+        />
+      </label>
+      <label>
+        {t("Warranty ends")}
+        <input
+          name="warrantyEnds"
+          type="date"
+          defaultValue={asset?.warrantyEnds ?? ""}
+        />
+      </label>
+      <label className="span-two">
+        {t("Additional characteristics")}
+        <textarea
+          name="attributes"
+          rows={3}
+          defaultValue={attributes
+            .filter(
+              (item) =>
+                !specLabels.has(item.label) ||
+                !specs.some((spec) => spec.label === item.label),
+            )
+            .map((item) => `${item.label}: ${item.value}`)
+            .join("\n")}
+        />
+      </label>
+      <label className="span-two">
+        {t("Repair history")}
+        <textarea
+          name="repairHistory"
+          rows={3}
+          defaultValue={asset?.repairHistory ?? ""}
+        />
+      </label>
+    </fieldset>
+  );
+}
+
+/** Red asterisk after the label of a required field. */
+function RequiredMark() {
+  return (
+    <span className="required-mark" aria-hidden="true">
+      *
+    </span>
   );
 }

@@ -38,18 +38,8 @@ type Scope = "company" | "mine";
 type Lifecycle = "active" | "archived";
 type Column = "serialNumber" | "category" | "assignee";
 
-const categories = [
-  "cables",
-  "charger",
-  "other",
-  "coffee_machine",
-  "microwave",
-  "monitor",
-  "laptop",
-  "vacuum",
-  "written_off",
-  "phone",
-];
+// Categories of the inventory groups shown on this page.
+const categories = ["laptop", "monitor", "written_off"];
 const columns: { key: Column; label: string }[] = [
   { key: "serialNumber", label: "Serial number" },
   { key: "category", label: "Category" },
@@ -507,6 +497,8 @@ export function CompanyAssetsWorkspace({
                             )}
                           </span>
                         </span>
+                      ) : !asset.assignmentTracked ? (
+                        "—"
                       ) : asset.status === "repair" ? (
                         <span className="asset-unassigned asset-in-repair">
                           {t("In repair")}

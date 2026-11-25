@@ -32,6 +32,8 @@ export type AssetDetails = {
   repairHistory: string;
   /** Category-specific characteristics such as model, year or memory. */
   attributes: { label: string; value: string }[];
+  /** False when the source (office inventory) does not record holders. */
+  assignmentTracked: boolean;
   assignee: {
     firstName: string;
     lastName: string;
@@ -159,11 +161,13 @@ export function AssetDetailsDialog({
           <div>
             <h2 id="asset-dialog-title">
               {asset.name}
-              <span
-                className={`asset-unassigned${asset.assignee ? " asset-assigned" : ""}`}
-              >
-                {assignment}
-              </span>
+              {asset.assignmentTracked && (
+                <span
+                  className={`asset-unassigned${asset.assignee ? " asset-assigned" : ""}`}
+                >
+                  {assignment}
+                </span>
+              )}
             </h2>
             <p>
               {[t(asset.category), asset.serialNumber]
@@ -177,21 +181,30 @@ export function AssetDetailsDialog({
           <section className="asset-dialog-main">
             <h3>{t("Details")}</h3>
             <dl className="asset-dialog-details">
-              {details.map((item) => (
-                <div key={item.label}>
-                  <dt>{item.label}</dt>
-                  <dd>{item.value || "—"}</dd>
-                </div>
-              ))}
+              {details
+                .filter(
+                  (item, index) =>
+                    asset.assignmentTracked || index < 2 || item.value,
+                )
+                .map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value || "—"}</dd>
+                  </div>
+                ))}
             </dl>
             <h3>{t("Description")}</h3>
             <p className="asset-dialog-description">
               {asset.description || "—"}
             </p>
-            <h3>{t("Repair history")}</h3>
-            <p className="asset-dialog-description">
-              {asset.repairHistory || "—"}
-            </p>
+            {(asset.assignmentTracked || asset.repairHistory) && (
+              <>
+                <h3>{t("Repair history")}</h3>
+                <p className="asset-dialog-description">
+                  {asset.repairHistory || "—"}
+                </p>
+              </>
+            )}
           </section>
 
           <aside className="asset-dialog-side">
@@ -224,11 +237,19 @@ export function AssetDetailsDialog({
                     <span className="asset-dialog-assignment-icon">
                       <UserPlus size={20} />
                     </span>
-                    <strong>{assignment}</strong>
+                    <strong>
+                      {asset.assignmentTracked ? assignment : t("No data")}
+                    </strong>
                     <p>
-                      {asset.status === "repair"
-                        ? t("This asset is being repaired.")
-                        : t("This asset is available and not used by anyone.")}
+                      {!asset.assignmentTracked
+                        ? t(
+                            "Only inventory managers can see who holds this asset.",
+                          )
+                        : asset.status === "repair"
+                          ? t("This asset is being repaired.")
+                          : t(
+                              "This asset is available and not used by anyone.",
+                            )}
                     </p>
                   </>
                 }

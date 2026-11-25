@@ -22,6 +22,31 @@ async function first<T extends ResultRow>(sql: string, ...values: unknown[]) {
     .first<T>();
 }
 
+/**
+ * A newly chosen holder must be a current employee. Keeping the existing
+ * holder is always allowed, so editing other fields of an item held by
+ * someone who has since left does not fail.
+ */
+async function validateItemHolder(command: InventoryCommand) {
+  if (command.action !== "item.save") return null;
+  const employeeId = command.assetDetails?.assignedEmployeeId;
+  if (!employeeId) return null;
+  if (command.id) {
+    const current = await first<{ assignedEmployeeId: number | null }>(
+      "SELECT assigned_employee_id AS assignedEmployeeId FROM inventory_items WHERE id = ?",
+      command.id,
+    );
+    if (current?.assignedEmployeeId === employeeId) return null;
+  }
+  const employee = await first<{ status: string }>(
+    "SELECT status FROM employees WHERE id = ?",
+    employeeId,
+  );
+  return employee && employee.status !== "inactive"
+    ? null
+    : "Assets may be assigned to current employees only.";
+}
+
 function errorResponse(error: unknown) {
   const message =
     error instanceof Error ? error.message : "Inventory operation failed.";
@@ -48,7 +73,10 @@ function errorResponse(error: unknown) {
 }
 
 export async function GET(request: Request) {
-  await getCurrentUser();
+  const user = await getCurrentUser();
+  const access = await getAccessPolicy(user);
+  const includeAssetDetails =
+    canManageInventory(user.role, access.manageInventory) && !user.isPreview;
   const url = new URL(request.url);
   const type = url.searchParams.get("historyType");
   const rawId = url.searchParams.get("historyId");
@@ -73,9 +101,12 @@ export async function GET(request: Request) {
       );
     historyScope = { type, id, ...(locationId ? { locationId } : {}) };
   }
-  return Response.json(await getOfficeInventory(true, historyScope), {
-    headers: { "Cache-Control": "private, no-store" },
-  });
+  return Response.json(
+    await getOfficeInventory(true, historyScope, includeAssetDetails),
+    {
+      headers: { "Cache-Control": "private, no-store" },
+    },
+  );
 }
 
 export async function POST(request: Request) {
@@ -99,6 +130,9 @@ export async function POST(request: Request) {
   if (command.action === "history.correct" && !hasRecentAuthentication(user)) {
     return recentAuthenticationResponse("/inventory");
   }
+  const holderError = await validateItemHolder(command);
+  if (holderError)
+    return Response.json({ error: holderError }, { status: 400 });
   try {
     await executeCommand(command, user.email);
     return Response.json(
@@ -433,6 +467,32 @@ async function executeCommand(command: InventoryCommand, actor: string) {
             )
             .bind(command.sku),
         );
+      if (command.assetDetails) {
+        const details = command.assetDetails;
+        const holderName = details.assignedEmployeeId
+          ? ""
+          : details.assigneeName;
+        const hasHolder = Boolean(details.assignedEmployeeId || holderName);
+        statements.push(
+          db
+            .prepare(
+              "UPDATE inventory_items SET serial_number=?,price=?,division=?,department=?,warranty_ends=?,repair_history=?,attributes_json=?,assigned_employee_id=?,assignee_name=?,assigned_since=? WHERE sku=?",
+            )
+            .bind(
+              details.serialNumber,
+              details.price,
+              details.division,
+              details.department,
+              details.warrantyEnds ?? null,
+              details.repairHistory,
+              JSON.stringify(details.attributes),
+              details.assignedEmployeeId,
+              holderName,
+              hasHolder ? (details.assignedSince ?? null) : null,
+              command.sku,
+            ),
+        );
+      }
       statements.push(
         db
           .prepare(

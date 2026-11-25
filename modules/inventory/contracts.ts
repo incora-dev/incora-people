@@ -43,6 +43,31 @@ const location = z.object({
   active: z.boolean().default(true),
 });
 
+/**
+ * Asset details of an inventory item (laptops, monitors and other equipment).
+ * Optional: when omitted, a save leaves the stored details unchanged.
+ */
+export const inventoryAssetDetailsSchema = z.object({
+  serialNumber: z.string().trim().max(100).default(""),
+  price: z.string().trim().max(60).default(""),
+  division: z.string().trim().max(120).default(""),
+  department: z.string().trim().max(120).default(""),
+  warrantyEnds: activeDate,
+  repairHistory: z.string().trim().max(2000).default(""),
+  attributes: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(60),
+        value: z.string().trim().min(1).max(200),
+      }),
+    )
+    .max(30)
+    .default([]),
+  assignedEmployeeId: positiveId.nullable().default(null),
+  assigneeName: z.string().trim().max(160).default(""),
+  assignedSince: activeDate,
+});
+
 const item = z.object({
   action: z.literal("item.save"),
   id: positiveId.optional(),
@@ -58,6 +83,7 @@ const item = z.object({
   unit: z.string().trim().min(1).max(24).default("шт."),
   active: z.boolean().default(true),
   nextInventoryDate: activeDate,
+  assetDetails: inventoryAssetDetailsSchema.optional(),
 });
 
 const minimum = z.object({

@@ -6,7 +6,7 @@ import {
   buildAssetFilterOptions,
   withAssetPlaces,
 } from "@/modules/assets/filter-options";
-import { getAssetRegister } from "@/modules/assets/register";
+import { getInventoryAssets } from "@/modules/assets/inventory-assets";
 import {
   canViewInactiveEmployees,
   canViewNotInvitedEmployees,
@@ -21,7 +21,7 @@ export default async function CompanyAssetsPage() {
   // Same visibility rules as the people directory: filter choices never list
   // anyone the viewer could not already find on /employees.
   const [assets, units, people] = await Promise.all([
-    getAssetRegister(user, access),
+    getInventoryAssets(user, access),
     getOrgUnits(),
     getEmployeeDirectory({
       includeInactive: canViewInactiveEmployees(user.role),

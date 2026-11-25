@@ -497,7 +497,15 @@ test("inventory history is server-scoped and read DTOs omit account email addres
     source("app/api/inventory/route.ts"),
     source("modules/inventory/queries.ts"),
   ]);
-  assert.match(route, /getOfficeInventory\(true, historyScope\)/);
+  assert.match(
+    route,
+    /getOfficeInventory\(true, historyScope, includeAssetDetails\)/,
+  );
+  // Serial numbers, prices and holders only reach inventory managers.
+  assert.match(
+    route,
+    /const includeAssetDetails =\s*canManageInventory\(user\.role, access\.manageInventory\) && !user\.isPreview;/,
+  );
   assert.match(
     route,
     /if \(!canManageInventory\(user\.role, access\.manageInventory\)\)/,

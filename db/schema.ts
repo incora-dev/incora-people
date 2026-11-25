@@ -797,6 +797,18 @@ export const inventoryItems = sqliteTable(
     unit: text("unit").notNull().default("шт."),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     nextInventoryDate: text("next_inventory_date"),
+    serialNumber: text("serial_number").notNull().default(""),
+    price: text("price").notNull().default(""),
+    division: text("division").notNull().default(""),
+    department: text("department").notNull().default(""),
+    warrantyEnds: text("warranty_ends"),
+    repairHistory: text("repair_history").notNull().default(""),
+    attributesJson: text("attributes_json").notNull().default("[]"),
+    assignedEmployeeId: integer("assigned_employee_id").references(
+      () => employees.id,
+    ),
+    assigneeName: text("assignee_name").notNull().default(""),
+    assignedSince: text("assigned_since"),
     createdByEmail: text("created_by_email").notNull(),
     updatedByEmail: text("updated_by_email").notNull(),
     createdAt: text("created_at")
@@ -812,6 +824,7 @@ export const inventoryItems = sqliteTable(
       table.active,
       table.name,
     ),
+    index("inventory_items_assignee_idx").on(table.assignedEmployeeId),
   ],
 );
 

@@ -16,6 +16,20 @@ export type InventoryStockDto = {
   version: number;
   updatedAt: string;
 };
+/** Asset details of an item; present only for inventory managers. */
+export type InventoryItemAssetDto = {
+  serialNumber: string;
+  price: string;
+  division: string;
+  department: string;
+  warrantyEnds: string | null;
+  repairHistory: string;
+  attributes: { label: string; value: string }[];
+  assignedEmployeeId: number | null;
+  assignedEmployeeName: string | null;
+  assigneeName: string;
+  assignedSince: string | null;
+};
 export type InventoryItemDto = {
   id: number;
   groupId: number;
@@ -31,6 +45,7 @@ export type InventoryItemDto = {
   lowStock: boolean;
   lastInventoryDate: string | null;
   lastInventoryDateByLocation: Record<number, string>;
+  asset?: InventoryItemAssetDto;
 };
 export type InventoryGroupDto = {
   id: number;
@@ -143,9 +158,29 @@ async function all<T extends Row>(sql: string, ...values: unknown[]) {
   return result.results ?? [];
 }
 
+export function parseInventoryAttributes(
+  json: unknown,
+): { label: string; value: string }[] {
+  try {
+    const value: unknown = JSON.parse(String(json ?? "[]"));
+    if (!Array.isArray(value)) return [];
+    return value.filter(
+      (item): item is { label: string; value: string } =>
+        typeof item?.label === "string" && typeof item?.value === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * @param includeAssetDetails serial numbers, prices, repair history and
+ *   holders; pass true only for accounts that manage inventory.
+ */
 export async function getOfficeInventory(
   includeHistory = true,
   historyScope?: InventoryHistoryScope,
+  includeAssetDetails = false,
 ): Promise<InventorySnapshot> {
   const [
     categories,
@@ -299,6 +334,44 @@ export async function getOfficeInventory(
         Number(row.quantity ?? 0) < Number(row.minimumQuantity ?? 0);
     }
   }
+  if (includeAssetDetails) {
+    const assetRows =
+      await all(`SELECT item.id, item.serial_number AS serialNumber, item.price,
+      item.division, item.department, item.warranty_ends AS warrantyEnds,
+      item.repair_history AS repairHistory, item.attributes_json AS attributesJson,
+      item.assigned_employee_id AS assignedEmployeeId,
+      CASE WHEN employee.id IS NULL THEN NULL
+        ELSE trim(employee.first_name || ' ' || employee.last_name) END AS assignedEmployeeName,
+      item.assignee_name AS assigneeName, item.assigned_since AS assignedSince
+      FROM inventory_items item
+      LEFT JOIN employees employee ON employee.id = item.assigned_employee_id`);
+    for (const row of assetRows) {
+      const item = items.get(Number(row.id));
+      if (!item) continue;
+      item.asset = {
+        serialNumber: String(row.serialNumber ?? ""),
+        price: String(row.price ?? ""),
+        division: String(row.division ?? ""),
+        department: String(row.department ?? ""),
+        warrantyEnds:
+          row.warrantyEnds === null ? null : String(row.warrantyEnds),
+        repairHistory: String(row.repairHistory ?? ""),
+        attributes: parseInventoryAttributes(row.attributesJson),
+        assignedEmployeeId:
+          row.assignedEmployeeId === null
+            ? null
+            : Number(row.assignedEmployeeId),
+        assignedEmployeeName:
+          row.assignedEmployeeName === null
+            ? null
+            : String(row.assignedEmployeeName),
+        assigneeName: String(row.assigneeName ?? ""),
+        assignedSince:
+          row.assignedSince === null ? null : String(row.assignedSince),
+      };
+    }
+  }
+
   const latestCountByItem = new Map<number, string>();
   for (const row of latestCounts) {
     const item = items.get(Number(row.itemId));

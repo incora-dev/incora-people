@@ -28,6 +28,7 @@ export function DateField({
   label,
   value = "",
   required = false,
+  requiredMark = false,
   min,
   max,
   readOnly = false,
@@ -37,6 +38,8 @@ export function DateField({
   label: string;
   value?: string;
   required?: boolean;
+  /** Show a red asterisk after the label of a required date. */
+  requiredMark?: boolean;
   min?: string;
   max?: string;
   readOnly?: boolean;
@@ -342,7 +345,14 @@ export function DateField({
 
   return (
     <div className="date-field" ref={rootRef}>
-      <label htmlFor={`${name}-manual`}>{label}</label>
+      <label htmlFor={`${name}-manual`}>
+        {label}
+        {requiredMark && (
+          <span className="required-mark" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
       <div className="date-field-controls">
         <input type="hidden" name={name} value={iso} />
         <input

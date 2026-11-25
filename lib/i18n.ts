@@ -1393,6 +1393,15 @@ const uk = {
   Download: "Завантажити",
   Since: "Від",
   "Repair history": "Історія ремонтів",
+  "No data": "Немає даних",
+  "Only inventory managers can see who holds this asset.":
+    "Кому видано цей актив, бачать лише ті, хто веде облік інвентарю.",
+  "Asset details": "Дані активу",
+  "Assigned since": "Дата видачі",
+  "Additional characteristics": "Додаткові характеристики",
+  "not in the system": "немає в системі",
+  "Assets may be assigned to current employees only.":
+    "Актив можна видати лише працівнику, який зараз працює.",
   cables: "Шнури",
   "Current assignment": "Поточне призначення",
   "This asset is available and not used by anyone.":

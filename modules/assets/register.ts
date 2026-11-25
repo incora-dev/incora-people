@@ -23,6 +23,8 @@ export type AssetRegisterItem = {
   description: string;
   repairHistory: string;
   attributes: AssetAttribute[];
+  /** False when the source does not record who holds the asset. */
+  assignmentTracked: boolean;
   assignee: {
     id: number | null;
     firstName: string;
@@ -142,6 +144,7 @@ export async function getAssetRegister(
       description: canManage ? row.description : "",
       repairHistory: canManage ? row.repairHistory : "",
       attributes: parseAssetAttributes(row.attributesJson),
+      assignmentTracked: true,
       assignee,
     };
   });

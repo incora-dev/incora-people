@@ -12,6 +12,7 @@ import {
   ListTodo,
   Map,
   MessagesSquare,
+  Package,
   PackageSearch,
   ReceiptText,
   Search,
@@ -53,6 +54,7 @@ const mobileNavigation = [
   { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/knowledge", label: "Knowledge base", icon: BookOpen },
   { href: "/one-on-one", label: "One-on-one", icon: MessagesSquare },
+  { href: "/company-assets", label: "Assets", icon: Package },
 ];
 
 export function MobileAppMenu({

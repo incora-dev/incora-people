@@ -45,7 +45,7 @@ const supportedPages = [
   /^\/employees$/,
   /^\/employees\/\d+$/,
   /^\/org$/,
-  /^\/(leave|calendar|time|expenses|tasks|one-on-one|inventory|documents|assets)$/,
+  /^\/(leave|calendar|time|expenses|tasks|one-on-one|inventory|documents|assets|company-assets)$/,
   /^\/announcements\/\d+$/,
 ];
 

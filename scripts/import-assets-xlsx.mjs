@@ -8,33 +8,15 @@
 //     -c dist/server/wrangler.json
 //
 // categories: comma-separated register categories to import (default
-// "Ноутбук,Монітор"). Rows are upserted by asset code. The holder is linked to
-// an employee when the name matches exactly; otherwise the name is kept as
+// "Ноутбук,Монітор"; add "Списано" to import write-offs as retired). Rows are
+// upserted by asset code; on re-import status and holder already managed in
+// the app are kept (see scripts/lib/asset-import-sql.mjs). The holder is linked
+// to an employee when the name matches exactly; otherwise the name is kept as
 // text. The export contains real people's data: keep the input and the
 // generated SQL out of the repository and never run them against --remote.
 import { readFileSync, writeFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
-
-const categoryKeys = {
-  Ноутбук: "laptop",
-  Монітор: "monitor",
-  Телефон: "phone",
-  Зарядні: "charger",
-  Шнури: "cables",
-  Інше: "other",
-  Кавомашина: "coffee_machine",
-  "Мікрохвильова піч": "microwave",
-  Порохотяг: "vacuum",
-  Списано: "written_off",
-};
-const attributeColumns = {
-  Модель: "Model",
-  Рік: "Year",
-  Діагональ: "Screen size",
-  Процесор: "Processor",
-  "Пам`ять": "Memory",
-  SSD: "SSD",
-};
+import { buildAssetImportSql } from "./lib/asset-import-sql.mjs";
 
 function unzip(buffer) {
   const end = buffer.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
@@ -112,23 +94,6 @@ function readSheet(path) {
   });
 }
 
-/** Excel stores dates as days since 1899-12-30. */
-function excelDate(value) {
-  if (!value) return null;
-  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  const days = Number(value);
-  if (!Number.isFinite(days)) return null;
-  return new Date(Date.UTC(1899, 11, 30) + Math.round(days) * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
-}
-
-const sql = (value) =>
-  value === null || value === undefined || value === ""
-    ? "NULL"
-    : `'${String(value).replaceAll("'", "''")}'`;
-const text = (value) => `'${String(value ?? "").replaceAll("'", "''")}'`;
-
 const [input, output, categoryArg = "Ноутбук,Монітор"] = process.argv.slice(2);
 if (!input || !output) {
   console.error(
@@ -138,58 +103,7 @@ if (!input || !output) {
 }
 const wanted = new Set(categoryArg.split(",").map((item) => item.trim()));
 const [header, ...body] = readSheet(input);
-const column = Object.fromEntries(header.map((name, index) => [name, index]));
-for (const required of ["Код", "Назва", "Категорія"])
-  if (!(required in column)) throw new Error(`Missing column: ${required}`);
-const cell = (row, name) => (name in column ? (row[column[name]] ?? "") : "");
-
-const statements = [];
-const counts = {};
-for (const row of body) {
-  const sourceCategory = cell(row, "Категорія");
-  const tag = cell(row, "Код").toUpperCase();
-  if (!wanted.has(sourceCategory) || !tag) continue;
-  counts[sourceCategory] = (counts[sourceCategory] ?? 0) + 1;
-  const holder = cell(row, "Призначено");
-  const attributes = Object.entries(attributeColumns)
-    .map(([source, label]) => ({ label, value: cell(row, source) }))
-    .filter((item) => item.value);
-  const employee = holder
-    ? `(SELECT id FROM employees WHERE lower(trim(first_name) || ' ' || trim(last_name)) = lower(${text(holder)}) ORDER BY id LIMIT 1)`
-    : "NULL";
-  statements.push(`INSERT INTO company_assets
-  (name, asset_tag, category, status, assigned_employee_id, serial_number,
-   price, location, division, department, warranty_ends, description,
-   repair_history, attributes_json, assigned_since, assignee_name, updated_at)
-VALUES
-  (${text(cell(row, "Назва"))}, ${text(tag)},
-   ${text(categoryKeys[sourceCategory] ?? "other")},
-   ${text(holder ? "assigned" : "available")}, ${employee},
-   ${text(cell(row, "Серійний номер"))}, ${text(cell(row, "Ціна"))},
-   ${text(cell(row, "Локація"))}, ${text(cell(row, "Підрозділ"))},
-   ${text(cell(row, "Департамент"))},
-   ${sql(excelDate(cell(row, "Гарантія закінчується")))},
-   ${text(cell(row, "Опис"))}, ${text(cell(row, "Repair History"))},
-   ${text(JSON.stringify(attributes))},
-   ${sql(holder ? excelDate(cell(row, "Видано")) : null)},
-   ${text(holder)}, CURRENT_TIMESTAMP)
-ON CONFLICT(asset_tag) DO UPDATE SET
-  name = excluded.name, category = excluded.category, status = excluded.status,
-  assigned_employee_id = excluded.assigned_employee_id,
-  serial_number = excluded.serial_number, price = excluded.price,
-  location = excluded.location, division = excluded.division,
-  department = excluded.department, warranty_ends = excluded.warranty_ends,
-  description = excluded.description, repair_history = excluded.repair_history,
-  attributes_json = excluded.attributes_json,
-  assigned_since = excluded.assigned_since,
-  assignee_name = excluded.assignee_name, updated_at = CURRENT_TIMESTAMP;`);
-}
-// A matched employee becomes the source of truth for the holder's name.
-statements.push(
-  "UPDATE company_assets SET assignee_name = '' WHERE assigned_employee_id IS NOT NULL;",
-);
-writeFileSync(output, `${statements.join("\n")}\n`);
-console.log(
-  `Wrote ${statements.length - 1} assets to ${output}:`,
-  JSON.stringify(counts),
-);
+const { sql, counts } = buildAssetImportSql(header, body, wanted);
+writeFileSync(output, `${sql}\n`);
+const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+console.log(`Wrote ${total} assets to ${output}:`, JSON.stringify(counts));

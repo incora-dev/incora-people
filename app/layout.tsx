@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { cookies } from "next/headers";
 import "./globals.css";
@@ -8,15 +8,11 @@ import { LocaleProvider } from "@/components/LocaleProvider";
 import { LOCALE_COOKIE, normalizeLocale } from "@/lib/i18n";
 import { MVP_PROGRESS } from "@/lib/product-progress";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-});
-
+// One typeface for the whole app: Inter covers both Latin and Cyrillic, so
+// Ukrainian and English text render with the same font.
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin"],
+  subsets: ["latin", "cyrillic"],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -99,7 +95,7 @@ export default async function RootLayout({
       : null;
   return (
     <html lang={locale}>
-      <body className={`${poppins.variable} ${inter.variable}`}>
+      <body className={inter.variable}>
         <LocaleProvider locale={locale}>
           <AppShell initialPreview={initialPreview}>{children}</AppShell>
         </LocaleProvider>

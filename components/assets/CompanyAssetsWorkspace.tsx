@@ -173,7 +173,7 @@ export function CompanyAssetsWorkspace({
   );
   const activeFilters = countAssetFilters(filters);
   const gridTemplate = [
-    "minmax(220px, 1.4fr)",
+    "minmax(280px, 1.4fr)",
     ...columns.map((column) =>
       column.key === "assignee" ? "minmax(200px, 1.6fr)" : "minmax(130px, 1fr)",
     ),
@@ -326,107 +326,119 @@ export function CompanyAssetsWorkspace({
             />
           </label>
 
-          <div className="dropdown-anchor">
-            <button
-              type="button"
-              className="button ghost-button"
-              aria-expanded={openMenu === "view"}
-              onClick={() =>
-                setOpenMenu((open) => (open === "view" ? null : "view"))
-              }
-            >
-              <SlidersHorizontal size={16} /> {t("View settings")}
-              <ChevronDown size={15} />
-            </button>
-            {openMenu === "view" && (
-              <section
-                className="dropdown-panel asset-view-menu"
+          <div className="asset-toolbar-actions">
+            <div className="dropdown-anchor">
+              <button
+                type="button"
+                className="button ghost-button"
                 aria-label={t("View settings")}
+                title={t("View settings")}
+                aria-expanded={openMenu === "view"}
+                onClick={() =>
+                  setOpenMenu((open) => (open === "view" ? null : "view"))
+                }
               >
-                <div className="asset-sort-row">
-                  <ArrowUpDown size={16} />
-                  <span>{t("Sort by")}</span>
-                  <div className="asset-sort-direction" role="group">
-                    {(
-                      [
-                        ["asc", "Ascending", ArrowUpNarrowWide],
-                        ["desc", "Descending", ArrowDownWideNarrow],
-                      ] as const
-                    ).map(([value, label, Icon]) => (
+                <SlidersHorizontal size={16} />
+                <span className="asset-toolbar-label">
+                  {t("View settings")}
+                </span>
+                <ChevronDown size={15} />
+              </button>
+              {openMenu === "view" && (
+                <section
+                  className="dropdown-panel asset-view-menu"
+                  aria-label={t("View settings")}
+                >
+                  <div className="asset-sort-row">
+                    <ArrowUpDown size={16} />
+                    <span>{t("Sort by")}</span>
+                    <div className="asset-sort-direction" role="group">
+                      {(
+                        [
+                          ["asc", "Ascending", ArrowUpNarrowWide],
+                          ["desc", "Descending", ArrowDownWideNarrow],
+                        ] as const
+                      ).map(([value, label, Icon]) => (
+                        <button
+                          type="button"
+                          key={value}
+                          className={sortDirection === value ? "active" : ""}
+                          aria-pressed={sortDirection === value}
+                          aria-label={t(label)}
+                          title={t(label)}
+                          onClick={() => setSortDirection(value)}
+                        >
+                          <Icon size={15} />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="asset-sort-field">
                       <button
                         type="button"
-                        key={value}
-                        className={sortDirection === value ? "active" : ""}
-                        aria-pressed={sortDirection === value}
-                        aria-label={t(label)}
-                        title={t(label)}
-                        onClick={() => setSortDirection(value)}
+                        aria-haspopup="listbox"
+                        aria-expanded={sortListOpen}
+                        onClick={() => setSortListOpen((open) => !open)}
                       >
-                        <Icon size={15} />
+                        {t(
+                          sortOptions.find((option) => option.key === sortKey)!
+                            .label,
+                        )}
+                        <ChevronDown size={15} />
                       </button>
-                    ))}
-                  </div>
-                  <div className="asset-sort-field">
-                    <button
-                      type="button"
-                      aria-haspopup="listbox"
-                      aria-expanded={sortListOpen}
-                      onClick={() => setSortListOpen((open) => !open)}
-                    >
-                      {t(
-                        sortOptions.find((option) => option.key === sortKey)!
-                          .label,
+                      {sortListOpen && (
+                        <ul className="asset-sort-list" role="listbox">
+                          {sortOptions.map((option) => (
+                            <li key={option.key}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={sortKey === option.key}
+                                className={
+                                  sortKey === option.key ? "active" : ""
+                                }
+                                onClick={() => {
+                                  setSortKey(option.key);
+                                  setSortListOpen(false);
+                                }}
+                              >
+                                {t(option.label)}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                      <ChevronDown size={15} />
-                    </button>
-                    {sortListOpen && (
-                      <ul className="asset-sort-list" role="listbox">
-                        {sortOptions.map((option) => (
-                          <li key={option.key}>
-                            <button
-                              type="button"
-                              role="option"
-                              aria-selected={sortKey === option.key}
-                              className={sortKey === option.key ? "active" : ""}
-                              onClick={() => {
-                                setSortKey(option.key);
-                                setSortListOpen(false);
-                              }}
-                            >
-                              {t(option.label)}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </section>
-            )}
-          </div>
+                </section>
+              )}
+            </div>
 
-          <div className="dropdown-anchor">
-            <button
-              type="button"
-              className="button ghost-button"
-              aria-expanded={openMenu === "export"}
-              onClick={() =>
-                setOpenMenu((open) => (open === "export" ? null : "export"))
-              }
-            >
-              <Download size={16} /> {t("Export to")}
-              <ChevronDown size={15} />
-            </button>
-            {openMenu === "export" && (
-              <section
-                className="dropdown-panel asset-menu"
+            <div className="dropdown-anchor">
+              <button
+                type="button"
+                className="button ghost-button"
                 aria-label={t("Export to")}
+                title={t("Export to")}
+                aria-expanded={openMenu === "export"}
+                onClick={() =>
+                  setOpenMenu((open) => (open === "export" ? null : "export"))
+                }
               >
-                <button type="button" onClick={exportCsv}>
-                  CSV
-                </button>
-              </section>
-            )}
+                <Download size={16} />
+                <span className="asset-toolbar-label">{t("Export to")}</span>
+                <ChevronDown size={15} />
+              </button>
+              {openMenu === "export" && (
+                <section
+                  className="dropdown-panel asset-menu"
+                  aria-label={t("Export to")}
+                >
+                  <button type="button" onClick={exportCsv}>
+                    CSV
+                  </button>
+                </section>
+              )}
+            </div>
           </div>
           <AssetActiveFilters
             filters={filters}

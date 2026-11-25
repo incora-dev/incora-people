@@ -2323,7 +2323,7 @@ a {
   padding-left: 10px;
   border-left: 1px solid #454545;
   color: #a4a4a4;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -2342,7 +2342,7 @@ a {
   padding: 0 13px;
   border-radius: 12px;
   color: #a8a8aa;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 13px;
   font-weight: 500;
   transition: 160ms ease;
@@ -2389,7 +2389,7 @@ a {
 }
 
 .sidebar-user strong {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 12px;
   font-weight: 500;
 }
@@ -2527,7 +2527,7 @@ kbd {
 }
 
 .app-footer-copy strong {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 11px;
 }
 
@@ -2670,7 +2670,7 @@ kbd {
 
 .roadmap-overall-value {
   color: var(--incora-yellow);
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 52px;
   font-weight: 700;
   line-height: 1;
@@ -2826,7 +2826,7 @@ kbd {
   align-items: center;
   padding: 5px 8px;
   border-radius: 999px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 9px;
   font-weight: 700;
 }
@@ -3033,7 +3033,7 @@ kbd {
 }
 
 .roadmap-module-heading > strong {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 17px;
 }
 
@@ -3148,7 +3148,7 @@ kbd {
 .eyebrow {
   margin: 0 0 8px;
   color: #98999c;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -3165,7 +3165,7 @@ h1,
 h2,
 strong,
 .button {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 
 h1 {
@@ -3343,7 +3343,7 @@ h2 {
 
 .text-link {
   color: #8b730e;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 11px;
   font-weight: 600;
 }
@@ -3404,7 +3404,7 @@ h2 {
   border-radius: 13px;
   color: var(--ink);
   background: var(--incora-yellow-soft);
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 12px;
   font-weight: 700;
 }
@@ -3758,7 +3758,7 @@ h2 {
   min-height: 42px;
   border-bottom: 1px solid var(--line);
   color: #96979a;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -4143,7 +4143,7 @@ h2 {
   gap: 5px;
   padding: 6px 9px;
   border-radius: 999px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 9px;
   font-weight: 600;
 }
@@ -4234,7 +4234,7 @@ h2 {
   display: grid;
   gap: 7px;
   color: #64666b;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 10px;
   font-weight: 600;
 }
@@ -4306,7 +4306,7 @@ h2 {
   gap: 7px;
   margin-bottom: 20px;
   color: var(--muted);
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 11px;
   font-weight: 500;
 }
@@ -4779,7 +4779,7 @@ body:has(#history:target) .profile-tabs a[href="#history"]::after {
 
 .detail-list dd {
   margin: 7px 0 0 22px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 12px;
   font-weight: 500;
 }
@@ -4874,7 +4874,7 @@ body:has(#history:target) .profile-tabs a[href="#history"]::after {
 
 .live-time {
   margin: 2px 0 10px;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: clamp(35px, 5vw, 48px);
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -5438,7 +5438,7 @@ body:has(#history:target) .profile-tabs a[href="#history"]::after {
   border-bottom: 1px solid var(--line);
   color: #95969a;
   background: #fafaf8;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
@@ -5850,7 +5850,7 @@ body:has(#history:target) .profile-tabs a[href="#history"]::after {
     gap: 4px;
     padding: 8px 4px;
     border-radius: 11px;
-    font-family: var(--font-poppins), sans-serif;
+    font-family: var(--font-inter), sans-serif;
     font-size: 9px;
   }
 
@@ -8727,7 +8727,7 @@ h2 {
   }
 
   .mobile-menu-heading strong {
-    font-family: var(--font-poppins), sans-serif;
+    font-family: var(--font-inter), sans-serif;
     font-size: 14px;
   }
 
@@ -10734,11 +10734,63 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 12px 15px;
   border-bottom: 1px solid var(--line);
 }
-.asset-toolbar .button {
+.asset-panel .asset-toolbar .button {
   min-height: var(--directory-control-height);
+}
+/* Buttons match the height of the Active / Archived switch. "Add filter"
+   keeps its own padding. Prefixed with .asset-panel to outrank the mobile
+   ".main-content .button { min-height: 44px }" rule further down. */
+.asset-panel .asset-toolbar .button,
+.asset-toolbar .directory-quick-status,
+.asset-toolbar .asset-filter-trigger {
+  height: var(--directory-control-height);
+  min-height: var(--directory-control-height);
+}
+.asset-panel .asset-toolbar .button:not(.asset-filter-button) {
+  gap: 7px;
+  padding: 0 12px;
+}
+.asset-toolbar .directory-quick-status button {
+  padding: 0 10px;
+}
+.asset-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+.asset-toolbar-actions .dropdown-panel {
+  right: 0;
+  left: auto;
+}
+@media (max-width: 1100px) {
+  /* Search drops to its own full-width row; actions stay on the first row. */
+  .asset-toolbar .asset-search {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .asset-toolbar-actions {
+    margin-left: auto;
+  }
+  .asset-active-filters {
+    order: 2;
+  }
+}
+@media (max-width: 640px) {
+  .asset-toolbar-label,
+  .asset-panel .asset-toolbar-actions .button > svg:last-child {
+    display: none;
+  }
+  .asset-panel .asset-toolbar-actions .button > svg:first-child {
+    flex: none;
+  }
+  /* :not() matches the specificity of the desktop padding rule above. */
+  .asset-panel .asset-toolbar-actions .button:not(.asset-filter-button) {
+    width: var(--directory-control-height);
+    justify-content: center;
+    padding: 0;
+  }
 }
 .asset-toolbar .asset-search {
   flex: 1 1 220px;
@@ -11181,22 +11233,27 @@ body {
 .asset-table-row > span {
   padding: 0 10px;
 }
+/* Same 15px side inset as the toolbar above. */
 .asset-table-head > span:first-child,
 .asset-table-row > span:first-child {
-  padding-left: 20px;
+  padding-left: 15px;
+}
+.asset-table-head > span:last-child,
+.asset-table-row > span:last-child {
+  padding-right: 15px;
 }
 .asset-table-head {
   min-height: 42px;
   border-bottom: 1px solid var(--line);
   background: #fafafa;
   color: #60636a;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .asset-table-row {
-  min-height: 64px;
+  min-height: 48px;
   border-bottom: 1px solid #f0f0ed;
   transition: background 140ms ease;
 }
@@ -11514,7 +11571,7 @@ body {
 .asset-assignee small {
   font-size: 11px;
 }
-.asset-toolbar .button {
+.asset-panel .asset-toolbar .button {
   font-size: 12px;
 }
 

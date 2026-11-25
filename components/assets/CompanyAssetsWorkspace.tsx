@@ -366,7 +366,7 @@ export function CompanyAssetsWorkspace({
                           aria-pressed={sortDirection === value}
                           aria-label={t(label)}
                           title={t(label)}
-                          onClick={() => setSortDirection(value)}
+                          onClick={() => resetPage(setSortDirection)(value)}
                         >
                           <Icon size={15} />
                         </button>
@@ -397,7 +397,7 @@ export function CompanyAssetsWorkspace({
                                   sortKey === option.key ? "active" : ""
                                 }
                                 onClick={() => {
-                                  setSortKey(option.key);
+                                  resetPage(setSortKey)(option.key);
                                   setSortListOpen(false);
                                 }}
                               >

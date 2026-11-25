@@ -608,6 +608,16 @@ export const companyAssets = sqliteTable(
     ),
     serialNumber: text("serial_number").notNull().default(""),
     note: text("note").notNull().default(""),
+    price: text("price").notNull().default(""),
+    location: text("location").notNull().default(""),
+    division: text("division").notNull().default(""),
+    department: text("department").notNull().default(""),
+    warrantyEnds: text("warranty_ends"),
+    description: text("description").notNull().default(""),
+    repairHistory: text("repair_history").notNull().default(""),
+    attributesJson: text("attributes_json").notNull().default("[]"),
+    assignedSince: text("assigned_since"),
+    assigneeName: text("assignee_name").notNull().default(""),
     createdAt: text("created_at")
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),

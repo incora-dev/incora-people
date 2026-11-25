@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { CompanyAssetsWorkspace } from "@/components/assets/CompanyAssetsWorkspace";
 import { getAccessPolicy, getCurrentUser } from "@/lib/auth";
 import { getEmployeeDirectory, getOrgUnits } from "@/lib/data";
-import { buildAssetFilterOptions } from "@/modules/assets/filter-options";
+import {
+  buildAssetFilterOptions,
+  withAssetPlaces,
+} from "@/modules/assets/filter-options";
+import { getAssetRegister } from "@/modules/assets/register";
 import {
   canViewInactiveEmployees,
   canViewNotInvitedEmployees,
@@ -16,26 +20,31 @@ export default async function CompanyAssetsPage() {
   const access = await getAccessPolicy(user);
   // Same visibility rules as the people directory: filter choices never list
   // anyone the viewer could not already find on /employees.
-  const [units, people] = await Promise.all([
+  const [assets, units, people] = await Promise.all([
+    getAssetRegister(user, access),
     getOrgUnits(),
     getEmployeeDirectory({
       includeInactive: canViewInactiveEmployees(user.role),
       includeNotInvited: canViewNotInvitedEmployees(access),
     }),
   ]);
-  const filterOptions = buildAssetFilterOptions(
-    units,
-    people.map((person) => ({
-      id: person.id,
-      firstName: person.firstName,
-      lastName: person.lastName,
-      jobTitle: person.jobTitle,
-      location: person.location,
-      photoFileId: user.isPreview ? null : (person.photoFileId ?? null),
-    })),
+  const filterOptions = withAssetPlaces(
+    buildAssetFilterOptions(
+      units,
+      people.map((person) => ({
+        id: person.id,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        jobTitle: person.jobTitle,
+        location: person.location,
+        photoFileId: user.isPreview ? null : (person.photoFileId ?? null),
+      })),
+    ),
+    assets,
   );
   return (
     <CompanyAssetsWorkspace
+      assets={assets}
       currentEmployeeId={user.employeeId ?? null}
       filterOptions={filterOptions}
     />

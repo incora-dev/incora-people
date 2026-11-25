@@ -83,6 +83,34 @@ export function buildAssetFilterOptions(
   };
 }
 
+/**
+ * Adds the departments, divisions and locations recorded on assets, so every
+ * value in the register can be filtered even when it is not in the org chart.
+ */
+export function withAssetPlaces(
+  options: AssetFilterOptions,
+  assets: { department: string; division: string; location: string }[],
+): AssetFilterOptions {
+  const known = new Set(options.departments.map((item) => item.name));
+  const extraDepartments = distinct(assets.map((asset) => asset.department))
+    .filter((name) => !known.has(name))
+    .map((name) => ({ name, teams: [] }));
+  return {
+    ...options,
+    departments: [...options.departments, ...extraDepartments].sort((a, b) =>
+      byName(a.name, b.name),
+    ),
+    divisions: distinct([
+      ...options.divisions,
+      ...assets.map((asset) => asset.division),
+    ]),
+    locations: distinct([
+      ...options.locations,
+      ...assets.map((asset) => asset.location),
+    ]),
+  };
+}
+
 export type AssetFilterKey =
   | "assignment"
   | "cycle"
@@ -112,16 +140,17 @@ export function countAssetFilters(filters: AssetFilters) {
   );
 }
 
+/**
+ * Location, division and department belong to the asset itself (where it is
+ * kept and which unit owns it), not to the person it is assigned to.
+ */
 export type FilterableAsset = {
   category: string;
-  assignee: {
-    id: number | null;
-    department: string;
-    team: string;
-    division: string;
-    location: string;
-    cycle: AssetEmploymentCycle;
-  } | null;
+  department: string;
+  team?: string;
+  division: string;
+  location: string;
+  assignee: { id: number | null; cycle: AssetEmploymentCycle } | null;
 };
 
 function matchesGroup(filter: AssetFilterValue, candidates: string[]): boolean {
@@ -151,17 +180,12 @@ export function matchesAssetFilters(
       assignment.values.includes(person ? "assigned" : "unassigned")) &&
     matchesGroup(filters.cycle, person ? [person.cycle] : []) &&
     matchesGroup(filters.category, [asset.category]) &&
-    matchesGroup(
-      filters.department,
-      person
-        ? [
-            person.department && `department:${person.department}`,
-            person.team && `team:${person.team}`,
-          ]
-        : [],
-    ) &&
-    matchesGroup(filters.division, [person?.division ?? ""]) &&
-    matchesGroup(filters.location, [person?.location ?? ""]) &&
+    matchesGroup(filters.department, [
+      asset.department && `department:${asset.department}`,
+      asset.team ? `team:${asset.team}` : "",
+    ]) &&
+    matchesGroup(filters.division, [asset.division]) &&
+    matchesGroup(filters.location, [asset.location]) &&
     matchesGroup(filters.assignee, person?.id ? [String(person.id)] : [])
   );
 }

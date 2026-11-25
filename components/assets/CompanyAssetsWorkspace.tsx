@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Eye,
   Filter,
   Search,
   SlidersHorizontal,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/components/LocaleProvider";
 import { useDismissibleLayer } from "@/components/ui/useDismissibleLayer";
+import { AssetDetailsDialog } from "@/components/assets/AssetDetailsDialog";
 import {
   AssetActiveFilters,
   AssetFilterMenu,
@@ -28,29 +30,16 @@ import {
   matchesAssetFilters,
   type AssetFilterOptions,
   type AssetFilters,
-  type FilterableAsset,
 } from "@/modules/assets/filter-options";
+import type { AssetRegisterItem } from "@/modules/assets/register";
 
-type Asset = {
-  id: number;
-  name: string;
-  assetTag: string;
-  category: string;
-  status: string;
-  serialNumber: string;
-  assignee:
-    | (NonNullable<FilterableAsset["assignee"]> & {
-        firstName: string;
-        lastName: string;
-        jobTitle: string;
-      })
-    | null;
-};
+type Asset = AssetRegisterItem;
 type Scope = "company" | "mine";
 type Lifecycle = "active" | "archived";
 type Column = "serialNumber" | "category" | "assignee";
 
 const categories = [
+  "cables",
   "charger",
   "other",
   "coffee_machine",
@@ -76,38 +65,6 @@ const sortOptions: { key: SortKey; label: string }[] = [
 ];
 const PAGE_SIZE = 20;
 
-// Placeholder rows until the asset register is filled with real data.
-const exampleAssets: Asset[] = [
-  {
-    id: 1,
-    name: 'MacBook Pro 2018 15" 16GB',
-    assetTag: "002",
-    category: "laptop",
-    status: "available",
-    serialNumber: "EXAMPLE-SN-002",
-    assignee: null,
-  },
-  {
-    id: 2,
-    name: "iPhone 13 Pro",
-    assetTag: "03",
-    category: "phone",
-    status: "assigned",
-    serialNumber: "EXAMPLE-SN-003",
-    assignee: {
-      id: null,
-      firstName: "Demo",
-      lastName: "Person",
-      jobTitle: "CTO",
-      department: "Engineering",
-      team: "",
-      division: "Ukraine",
-      location: "Lviv",
-      cycle: "working",
-    },
-  },
-];
-
 function pageList(current: number, total: number): (number | "gap")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages = new Set([1, total, current - 1, current, current + 1]);
@@ -125,11 +82,11 @@ function pageList(current: number, total: number): (number | "gap")[] {
 }
 
 export function CompanyAssetsWorkspace({
-  assets = exampleAssets,
+  assets,
   currentEmployeeId,
   filterOptions,
 }: {
-  assets?: Asset[];
+  assets: Asset[];
   currentEmployeeId: number | null;
   filterOptions: AssetFilterOptions;
 }) {
@@ -141,6 +98,7 @@ export function CompanyAssetsWorkspace({
   const [sortKey, setSortKey] = useState<SortKey>("code");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [sortListOpen, setSortListOpen] = useState(false);
+  const [viewing, setViewing] = useState<Asset | null>(null);
   const [page, setPage] = useState(1);
   const [openMenu, setOpenMenu] = useState<
     "filters" | "view" | "export" | null
@@ -501,8 +459,19 @@ export function CompanyAssetsWorkspace({
                 style={{ gridTemplateColumns: gridTemplate }}
               >
                 <span className="asset-name-cell" role="cell">
-                  <strong>{asset.name}</strong>
-                  <small>{asset.assetTag}</small>
+                  <span>
+                    <strong>{asset.name}</strong>
+                    <small>{asset.assetTag}</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="asset-view-button"
+                    aria-label={`${t("View asset")} ${asset.name}`}
+                    title={t("View asset")}
+                    onClick={() => setViewing(asset)}
+                  >
+                    <Eye size={16} />
+                  </button>
                 </span>
                 {columns.map((column) => (
                   <span role="cell" key={column.key}>
@@ -592,6 +561,9 @@ export function CompanyAssetsWorkspace({
           </footer>
         </div>
       </section>
+      {viewing && (
+        <AssetDetailsDialog asset={viewing} onClose={() => setViewing(null)} />
+      )}
     </>
   );
 }

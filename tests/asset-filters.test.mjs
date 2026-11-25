@@ -7,16 +7,21 @@ import {
   matchesAssetFilters,
 } from "../modules/assets/filter-options.ts";
 
-const person = {
-  id: 7,
+const assigned = {
+  category: "laptop",
   department: "Engineering",
   team: "Frontend",
   division: "Ukraine",
   location: "Lviv",
-  cycle: "working",
+  assignee: { id: 7, cycle: "working" },
 };
-const assigned = { category: "laptop", assignee: person };
-const free = { category: "phone", assignee: null };
+const free = {
+  category: "phone",
+  department: "",
+  division: "",
+  location: "",
+  assignee: null,
+};
 const withFilter = (key, values, presence = null) => ({
   ...emptyAssetFilters,
   [key]: { values, presence },
@@ -39,6 +44,18 @@ test("assignment status matches assigned and unassigned assets", () => {
   const both = withFilter("assignment", ["assigned", "unassigned"]);
   assert.equal(matchesAssetFilters(free, both), true);
   assert.equal(matchesAssetFilters(assigned, both), true);
+});
+
+test("location, division and department come from the asset itself", () => {
+  const stored = { ...free, location: "Kyiv", division: "Europe" };
+  assert.equal(
+    matchesAssetFilters(stored, withFilter("location", ["Kyiv"])),
+    true,
+  );
+  assert.equal(
+    matchesAssetFilters(stored, withFilter("division", ["Europe"])),
+    true,
+  );
 });
 
 test("empty and not-empty test whether the field has a value", () => {

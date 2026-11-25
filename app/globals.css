@@ -11209,9 +11209,208 @@ body {
   background: #fffdf5;
 }
 .asset-table-row > .asset-name-cell {
+  justify-content: space-between;
+  gap: 10px;
+}
+.asset-name-cell > span {
+  display: flex;
+  min-width: 0;
   flex-direction: column;
+}
+.asset-view-button {
+  display: grid;
+  width: 32px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+.asset-table-row:hover .asset-view-button,
+.asset-view-button:focus-visible {
+  opacity: 1;
+}
+.asset-dialog {
+  display: grid;
+  width: min(1000px, 100%);
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  overflow: hidden;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  font-size: 12px;
+}
+.asset-dialog-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px 8px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #f6f7f9;
+  color: #52627a;
+}
+.asset-dialog-bar > span:first-child {
+  margin-right: auto;
+}
+.asset-dialog-bar-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--line);
+}
+.asset-dialog-bar kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+}
+.asset-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.asset-dialog-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef1f5;
+}
+.asset-dialog-header h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.asset-dialog-header p {
+  margin: 3px 0 0;
+  color: #52627a;
+}
+.asset-dialog-body {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+.asset-dialog-main {
+  padding: 18px 20px 24px;
+  overflow-y: auto;
+}
+.asset-dialog-side {
+  padding: 18px 16px;
+  border-left: 1px solid var(--line);
+}
+.asset-dialog h3 {
+  margin: 0 0 12px;
+  color: #52627a;
+  font-size: 12px;
+  font-weight: 600;
+}
+.asset-dialog-details {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+.asset-dialog-details > div {
+  display: grid;
+  grid-template-columns: minmax(140px, 40%) 1fr;
+  gap: 16px;
+}
+.asset-dialog-details dt {
+  color: #52627a;
+}
+.asset-dialog-details dd {
+  margin: 0;
+}
+.asset-dialog-description {
+  margin: 0;
+  color: #52627a;
+  white-space: pre-line;
+}
+.asset-dialog-assignment {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 36px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-align: center;
+}
+.asset-dialog-assignment strong {
+  font-size: 14px;
+}
+.asset-dialog-assignment p {
+  max-width: 180px;
+  margin: 0;
+  color: #52627a;
+}
+.asset-unassigned.asset-assigned {
+  border-color: transparent;
+  background: #dcf5e3;
+  color: #1f6b3a;
+}
+.asset-dialog-assignee {
+  display: flex;
   align-items: flex-start;
-  justify-content: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f6f7f9;
+}
+.asset-dialog-assignee > div {
+  display: grid;
+  gap: 3px;
+}
+.asset-dialog-assignee strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.asset-dialog-assignee span,
+.asset-dialog-assignee small {
+  color: #52627a;
+}
+.asset-dialog-assignee small {
+  font-size: 11px;
+}
+.asset-dialog-assignment-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef1f5;
+}
+@media (max-width: 760px) {
+  .asset-dialog-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .asset-dialog-main {
+    overflow: visible;
+  }
+  .asset-dialog-side {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+@media (hover: none) {
+  .asset-view-button {
+    opacity: 1;
+  }
 }
 .asset-name-cell small,
 .asset-assignee small {

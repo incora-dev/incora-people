@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListTodo,
   MessagesSquare,
+  Package,
   Menu,
   Plus,
   PackageSearch,
@@ -44,6 +45,7 @@ const navigation = [
   { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/knowledge", label: "Knowledge base", icon: BookOpen },
   { href: "/one-on-one", label: "One-on-one", icon: MessagesSquare },
+  { href: "/company-assets", label: "Assets", icon: Package },
 ];
 
 type SearchResult = {

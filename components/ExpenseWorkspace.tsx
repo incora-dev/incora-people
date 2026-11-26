@@ -247,7 +247,6 @@ export function ExpenseWorkspace({
         key: "date",
         header: "Date",
         minWidth: 105,
-        grow: 0.8,
         sortValue: (item) => item.expenseDate,
         cell: (item) => item.expenseDate,
       },
@@ -255,7 +254,6 @@ export function ExpenseWorkspace({
         key: "amount",
         header: "Amount",
         minWidth: 110,
-        grow: 0.8,
         sortValue: (item) => item.amountCents,
         cell: (item) => (
           <strong>{money(item.amountCents, item.currency)}</strong>
@@ -265,7 +263,6 @@ export function ExpenseWorkspace({
         key: "status",
         header: "Status",
         minWidth: 110,
-        grow: 0.8,
         sortValue: (item) => t(item.status),
         cell: (item) => (
           <span className={`status-badge ${item.status}`}>

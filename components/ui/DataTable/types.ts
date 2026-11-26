@@ -18,7 +18,11 @@ export type DataTableColumn<Row> = {
    * content is wider, unless truncate is set.
    */
   minWidth?: number;
-  /** Share of the spare width, like an fr unit (default 1). */
+  /**
+   * Share of the spare width, like an fr unit. Default 0: the column is as
+   * wide as its content (at least minWidth) and spare width stays empty
+   * before the actions column.
+   */
   grow?: number;
   /**
    * Keep the column at its base width share and let long content wrap or

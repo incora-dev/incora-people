@@ -149,7 +149,6 @@ export function LeaveWorkspace({
         key: "dates",
         header: "Dates",
         minWidth: 150,
-        grow: 1.2,
         // ISO start dates sort in calendar order.
         sortValue: (item) => item.startDate,
         cell: (item) => formatDateRange(item.startDate, item.endDate, locale),
@@ -158,7 +157,6 @@ export function LeaveWorkspace({
         key: "days",
         header: "Days",
         minWidth: 70,
-        grow: 0.5,
         sortValue: (item) => item.days,
         cell: (item) => item.days,
       },

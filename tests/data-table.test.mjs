@@ -9,6 +9,7 @@ import {
   compareSortValues,
   dataTableReducer,
   gridTemplateFor,
+  needsFiller,
   nextHeaderSort,
   pageCountFor,
   pageList,
@@ -215,7 +216,7 @@ test("one grid template covers selection, columns and actions", () => {
       selectable: true,
       actionsWidth: actionsColumnWidth(1),
     }),
-    "44px minmax(max-content, 1fr) minmax(max-content, 1fr) calc(42px + var(--data-table-inset, 15px))",
+    "44px max-content max-content 1fr calc(42px + var(--data-table-inset, 15px))",
   );
   assert.equal(
     actionsColumnWidth(2),
@@ -226,7 +227,7 @@ test("one grid template covers selection, columns and actions", () => {
 
 test("columns grow to their content unless truncated", () => {
   const base = { key: "a", header: "A", cell: () => "" };
-  assert.equal(columnTrack(base), "minmax(max-content, 1fr)");
+  assert.equal(columnTrack(base), "max-content");
   assert.equal(columnMinWidth(base), "130px");
   const wide = { ...base, minWidth: 280, grow: 1.4 };
   assert.equal(columnTrack(wide), "minmax(max-content, 1.4fr)");
@@ -234,6 +235,15 @@ test("columns grow to their content unless truncated", () => {
   const truncated = { ...wide, truncate: true };
   assert.equal(columnTrack(truncated), "minmax(280px, 1.4fr)");
   assert.equal(columnMinWidth(truncated), undefined);
+  assert.equal(columnTrack({ ...base, truncate: true }), "130px");
+  // Spare width goes to an empty track only when no column takes it.
+  assert.equal(needsFiller([base, truncated]), false);
+  assert.equal(needsFiller([base, { ...base, truncate: true }]), true);
+  assert.equal(gridTemplateFor([base, base]), "max-content max-content 1fr");
+  assert.equal(
+    gridTemplateFor([base, wide]),
+    "max-content minmax(max-content, 1.4fr)",
+  );
   const raw = { ...wide, width: "90px" };
   assert.equal(columnTrack(raw), "90px");
   assert.equal(columnMinWidth(raw), undefined);

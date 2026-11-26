@@ -278,17 +278,25 @@ export function actionsColumnWidth(maxActions: number) {
 }
 
 /**
- * Grid track of a column. By default it is at least as wide as its widest
- * cell (max-content) and shares the spare width by grow; the header cell
- * enforces the base width (columnMinWidth). A truncated column is fixed to
- * its base width share instead.
+ * Grid track of a column: as wide as its widest cell (max-content), plus
+ * a share of the spare width when grow is set; the header cell enforces the
+ * base width (columnMinWidth). A truncated column uses its base width (and
+ * grow share) instead of its content.
  */
 export function columnTrack<Row>(column: DataTableColumn<Row>) {
   if (column.width) return column.width;
-  const grow = column.grow ?? 1;
-  return column.truncate
-    ? `minmax(${column.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH}px, ${grow}fr)`
-    : `minmax(max-content, ${grow}fr)`;
+  const grow = column.grow ?? 0;
+  const base = `${column.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH}px`;
+  if (column.truncate) return grow > 0 ? `minmax(${base}, ${grow}fr)` : base;
+  return grow > 0 ? `minmax(max-content, ${grow}fr)` : "max-content";
+}
+
+/**
+ * True when no column takes spare width: an empty 1fr track then fills the
+ * row before the actions column, so columns keep their content width.
+ */
+export function needsFiller<Row>(columns: readonly DataTableColumn<Row>[]) {
+  return !columns.some((column) => column.width || (column.grow ?? 0) > 0);
 }
 
 /** Base width the header cell enforces; none for raw or truncated tracks. */
@@ -305,6 +313,7 @@ export function gridTemplateFor<Row>(
   return [
     ...(options.selectable ? [SELECT_COLUMN_WIDTH] : []),
     ...columns.map(columnTrack),
+    ...(needsFiller(columns) ? ["1fr"] : []),
     ...(options.actionsWidth ? [options.actionsWidth] : []),
   ].join(" ");
 }

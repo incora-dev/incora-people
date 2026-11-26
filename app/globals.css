@@ -11344,6 +11344,10 @@ body {
   background: #fff;
   transition: background 140ms ease;
 }
+/* The panel edge or the pagination border closes the table. */
+.data-table-row:last-child {
+  border-bottom: 0;
+}
 .data-table-row:hover,
 .data-table-row.selected {
   background: #fffdf5;

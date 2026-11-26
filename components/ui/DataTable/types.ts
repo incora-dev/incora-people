@@ -13,7 +13,23 @@ export type DataTableColumn<Row> = {
   /** Translation key; rendered through t(). */
   header: string;
   cell: (row: Row) => ReactNode;
-  /** Grid track; defaults to minmax(130px, 1fr). */
+  /**
+   * Base width in px (default 130). The column grows past it when its
+   * content is wider, unless truncate is set.
+   */
+  minWidth?: number;
+  /**
+   * Share of the spare width, like an fr unit. Default 0: the column is as
+   * wide as its content (at least minWidth). When no column sets grow, the
+   * first column takes all spare width.
+   */
+  grow?: number;
+  /**
+   * Keep the column at its base width share and let long content wrap or
+   * ellipsize instead of widening the table (free text, descriptions).
+   */
+  truncate?: boolean;
+  /** Raw grid track; overrides minWidth, grow and truncate. */
   width?: string;
   align?: DataTableAlign;
   /** Makes the column sortable by header click and in the sort menu. */
@@ -82,7 +98,11 @@ export type DataTableProps<Row> = {
   /** Rows per page; false shows every row. Defaults to 20. */
   pageSize?: number | false;
   density?: DataTableDensity;
-  /** Minimum table width; narrower screens scroll sideways. */
+  /**
+   * Optional minimum table width in px. Without it the table is as wide as
+   * its panel, or as its columns content when that is wider (then it
+   * scrolls sideways and the first column does not stretch).
+   */
   minWidth?: number;
   rowHref?: (row: Row) => string | null | undefined;
   onRowClick?: (row: Row) => void;

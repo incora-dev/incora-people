@@ -29,6 +29,7 @@ import { buildXlsx, XLSX_MIME } from "@/lib/xlsx";
 import {
   actionsColumnWidth,
   buildExportRows,
+  columnMinWidth,
   gridTemplateFor,
   nextHeaderSort,
 } from "./logic";
@@ -75,7 +76,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
     sortMenu,
     pageSize = 20,
     density = "regular",
-    minWidth = 760,
+    minWidth,
     rowHref,
     onRowClick,
     rowClassName,
@@ -104,10 +105,12 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
   const stickyColumn = table.visibleColumns[0]?.sticky
     ? table.visibleColumns[0].key
     : null;
-  const style = {
-    "--data-table-min-width": `${minWidth}px`,
-  } as CSSProperties;
-  const rowStyle = { gridTemplateColumns: gridTemplate };
+  const style = (
+    minWidth ? { "--data-table-min-width": `${minWidth}px` } : {}
+  ) as CSSProperties;
+  // Rows are subgrids of the table, so one template sizes every row and a
+  // column can grow to fit its widest cell.
+  const tableStyle = { gridTemplateColumns: gridTemplate };
   const clickable = Boolean(rowHref || onRowClick);
 
   // A shadow on the pinned columns while content scrolls beneath them.
@@ -203,177 +206,181 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
         : toolbar}
       <div
         ref={scrollRef}
-        className={`data-table${overflow.start ? " data-table-overflow-start" : ""}${overflow.end ? " data-table-overflow-end" : ""}`}
-        role="table"
-        aria-label={ariaLabel}
-        aria-rowcount={table.totalRows + 1}
-        aria-busy={loading || undefined}
+        className={`data-table-scroll${overflow.start ? " data-table-overflow-start" : ""}${overflow.end ? " data-table-overflow-end" : ""}`}
       >
-        <div className="data-table-head" role="row" style={rowStyle}>
-          {selectable && (
-            <span
-              className={`data-table-select${stickyColumn ? " data-table-sticky" : ""}`}
-              role="columnheader"
-            >
-              <input
-                type="checkbox"
-                aria-label={t("Select all")}
-                checked={table.allSelected}
-                ref={(input) => {
-                  if (input) input.indeterminate = table.someSelected;
-                }}
-                onChange={table.toggleAll}
-              />
-            </span>
-          )}
-          {table.visibleColumns.map((column) => {
-            const active = table.sort?.key === column.key;
-            const direction = active ? table.sort?.direction : undefined;
-            return (
+        <div
+          className="data-table"
+          role="table"
+          aria-label={ariaLabel}
+          aria-rowcount={table.totalRows + 1}
+          aria-busy={loading || undefined}
+          style={tableStyle}
+        >
+          <div className="data-table-head" role="row">
+            {selectable && (
               <span
-                key={column.key}
+                className={`data-table-select${stickyColumn ? " data-table-sticky" : ""}`}
                 role="columnheader"
-                className={`${alignClass(column.align)}${stickyClass(column.key)}`.trim()}
-                aria-sort={
-                  column.sortValue
-                    ? direction === "asc"
-                      ? "ascending"
-                      : direction === "desc"
-                        ? "descending"
-                        : "none"
-                    : undefined
-                }
               >
-                {column.sortValue ? (
-                  <button
-                    type="button"
-                    className={`data-table-sort${active ? " active" : ""}`}
-                    onClick={() =>
-                      table.setSort(nextHeaderSort(table.sort, column.key))
-                    }
-                  >
-                    {t(column.header)}
-                    {direction === "asc" ? (
-                      <ArrowUp size={13} aria-hidden />
-                    ) : direction === "desc" ? (
-                      <ArrowDown size={13} aria-hidden />
-                    ) : (
-                      <ArrowUpDown size={13} aria-hidden />
-                    )}
-                  </button>
-                ) : (
-                  t(column.header)
-                )}
+                <input
+                  type="checkbox"
+                  aria-label={t("Select all")}
+                  checked={table.allSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = table.someSelected;
+                  }}
+                  onChange={table.toggleAll}
+                />
               </span>
-            );
-          })}
-          {rowActions && (
-            <span
-              className="data-table-actions data-table-align-end"
-              role="columnheader"
-            >
-              <span className="sr-only">{t("Actions")}</span>
-            </span>
-          )}
-        </div>
-
-        {loading
-          ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <div
-                key={`skeleton-${index}`}
-                className="data-table-row data-table-skeleton-row"
-                role="row"
-                aria-hidden
-                style={rowStyle}
-              >
-                {selectable && <span role="cell" />}
-                {table.visibleColumns.map((column) => (
-                  <span key={column.key} role="cell">
-                    <span className="data-table-skeleton" />
-                  </span>
-                ))}
-                {rowActions && <span role="cell" />}
-              </div>
-            ))
-          : table.pageRows.map((row) => {
-              const key = rowKey(row);
-              const selected = selectable && table.isSelected(key);
-              const extra = rowClassName?.(row);
+            )}
+            {table.visibleColumns.map((column) => {
+              const active = table.sort?.key === column.key;
+              const direction = active ? table.sort?.direction : undefined;
               return (
-                <div
-                  key={key}
-                  className={`data-table-row${clickable ? " data-table-row-link" : ""}${selected ? " selected" : ""}${extra ? ` ${extra}` : ""}`}
-                  role="row"
-                  tabIndex={clickable ? 0 : undefined}
-                  style={rowStyle}
-                  onClick={
-                    clickable ? (event) => rowClick(event, row) : undefined
-                  }
-                  onKeyDown={
-                    clickable ? (event) => rowKeyDown(event, row) : undefined
+                <span
+                  key={column.key}
+                  role="columnheader"
+                  className={`${alignClass(column.align)}${stickyClass(column.key)}${column.truncate ? " data-table-truncate" : ""}`.trim()}
+                  style={{ minWidth: columnMinWidth(column) }}
+                  aria-sort={
+                    column.sortValue
+                      ? direction === "asc"
+                        ? "ascending"
+                        : direction === "desc"
+                          ? "descending"
+                          : "none"
+                      : undefined
                   }
                 >
-                  {selectable && (
-                    <span
-                      className={`data-table-select${stickyColumn ? " data-table-sticky" : ""}`}
-                      role="cell"
-                    >
-                      <input
-                        type="checkbox"
-                        aria-label={t("Select row")}
-                        checked={selected}
-                        onChange={() => table.toggleRow(key)}
-                      />
-                    </span>
-                  )}
-                  {table.visibleColumns.map((column) => (
-                    <span
-                      key={column.key}
-                      role="cell"
-                      className={
-                        `${alignClass(column.align)}${stickyClass(column.key)}`.trim() ||
-                        undefined
+                  {column.sortValue ? (
+                    <button
+                      type="button"
+                      className={`data-table-sort${active ? " active" : ""}`}
+                      onClick={() =>
+                        table.setSort(nextHeaderSort(table.sort, column.key))
                       }
                     >
-                      {column.cell(row)}
-                    </span>
-                  ))}
-                  {rowActions && (
-                    <span className="data-table-actions" role="cell">
-                      {actionsFor(row).map((action, index) => {
-                        const Icon = action.icon;
-                        if (action.href)
-                          return (
-                            <a
-                              key={`${index}-${action.label}`}
-                              className="data-table-action"
-                              href={action.href}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label={action.label}
-                              title={action.label}
-                            >
-                              <Icon size={16} />
-                            </a>
-                          );
-                        return (
-                          <button
-                            type="button"
-                            key={`${index}-${action.label}`}
-                            className={`data-table-action${action.danger ? " danger" : ""}`}
-                            aria-label={action.label}
-                            title={action.label}
-                            onClick={() => runAction(action)}
-                          >
-                            <Icon size={16} />
-                          </button>
-                        );
-                      })}
-                    </span>
+                      {t(column.header)}
+                      {direction === "asc" ? (
+                        <ArrowUp size={13} aria-hidden />
+                      ) : direction === "desc" ? (
+                        <ArrowDown size={13} aria-hidden />
+                      ) : (
+                        <ArrowUpDown size={13} aria-hidden />
+                      )}
+                    </button>
+                  ) : (
+                    t(column.header)
                   )}
-                </div>
+                </span>
               );
             })}
+            {rowActions && (
+              <span
+                className="data-table-actions data-table-align-end"
+                role="columnheader"
+              >
+                <span className="sr-only">{t("Actions")}</span>
+              </span>
+            )}
+          </div>
+
+          {loading
+            ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className="data-table-row data-table-skeleton-row"
+                  role="row"
+                  aria-hidden
+                >
+                  {selectable && <span role="cell" />}
+                  {table.visibleColumns.map((column) => (
+                    <span key={column.key} role="cell">
+                      <span className="data-table-skeleton" />
+                    </span>
+                  ))}
+                  {rowActions && <span role="cell" />}
+                </div>
+              ))
+            : table.pageRows.map((row) => {
+                const key = rowKey(row);
+                const selected = selectable && table.isSelected(key);
+                const extra = rowClassName?.(row);
+                return (
+                  <div
+                    key={key}
+                    className={`data-table-row${clickable ? " data-table-row-link" : ""}${selected ? " selected" : ""}${extra ? ` ${extra}` : ""}`}
+                    role="row"
+                    tabIndex={clickable ? 0 : undefined}
+                    onClick={
+                      clickable ? (event) => rowClick(event, row) : undefined
+                    }
+                    onKeyDown={
+                      clickable ? (event) => rowKeyDown(event, row) : undefined
+                    }
+                  >
+                    {selectable && (
+                      <span
+                        className={`data-table-select${stickyColumn ? " data-table-sticky" : ""}`}
+                        role="cell"
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={t("Select row")}
+                          checked={selected}
+                          onChange={() => table.toggleRow(key)}
+                        />
+                      </span>
+                    )}
+                    {table.visibleColumns.map((column) => (
+                      <span
+                        key={column.key}
+                        role="cell"
+                        className={
+                          `${alignClass(column.align)}${stickyClass(column.key)}${column.truncate ? " data-table-truncate" : ""}`.trim() ||
+                          undefined
+                        }
+                      >
+                        {column.cell(row)}
+                      </span>
+                    ))}
+                    {rowActions && (
+                      <span className="data-table-actions" role="cell">
+                        {actionsFor(row).map((action, index) => {
+                          const Icon = action.icon;
+                          if (action.href)
+                            return (
+                              <a
+                                key={`${index}-${action.label}`}
+                                className="data-table-action"
+                                href={action.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={action.label}
+                                title={action.label}
+                              >
+                                <Icon size={16} />
+                              </a>
+                            );
+                          return (
+                            <button
+                              type="button"
+                              key={`${index}-${action.label}`}
+                              className={`data-table-action${action.danger ? " danger" : ""}`}
+                              aria-label={action.label}
+                              title={action.label}
+                              onClick={() => runAction(action)}
+                            >
+                              <Icon size={16} />
+                            </button>
+                          );
+                        })}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+        </div>
       </div>
       {!loading && table.totalRows === 0 && empty && (
         <div className="compact-empty data-table-empty">

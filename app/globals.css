@@ -8048,29 +8048,6 @@ h2 {
   font-size: 9px;
 }
 
-.compact-table-head,
-.compact-table-row {
-  display: grid;
-  grid-template-columns: 1.1fr 1.3fr 0.5fr 0.7fr 80px;
-  align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  padding: 0 16px;
-}
-
-.compact-table-head {
-  color: var(--muted);
-  background: #fafafa;
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.compact-table-row {
-  border-top: 1px solid #f0f0ed;
-  font-size: 11px;
-}
-
 .leave-type-cell {
   display: flex;
   align-items: center;
@@ -8946,15 +8923,6 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .compact-table {
-    overflow-x: auto;
-  }
-
-  .compact-table-head,
-  .compact-table-row {
-    min-width: 620px;
-  }
-
   .time-metric-strip {
     grid-template-columns: repeat(2, 1fr);
     min-width: 0;
@@ -9413,17 +9381,11 @@ h2 {
   font-size: 10px;
 }
 
-.leave-workspace .compact-table-head,
-.leave-workspace .compact-table-row {
-  min-height: 48px;
-  padding-inline: 18px;
+/* The table lines up with the 18px panel heading (15px on phones). */
+.leave-workspace .data-table-panel {
+  --data-table-inset: 18px;
 }
 
-.leave-workspace .compact-table-head {
-  font-size: 9px;
-}
-
-.leave-workspace .compact-table-row,
 .leave-workspace .approval-row {
   font-size: 12px;
 }
@@ -9449,6 +9411,10 @@ h2 {
     align-items: flex-start;
     min-height: 0;
     padding: 15px;
+  }
+
+  .leave-workspace .data-table-panel {
+    --data-table-inset: 15px;
   }
 
   .settings-section .setting-card,
@@ -11261,15 +11227,26 @@ body {
 .data-table-compact {
   --data-table-row-height: 36px;
 }
-.data-table {
+.data-table-scroll {
   overflow-x: auto;
+}
+/* One grid for the whole table; header and rows are subgrids, so columns
+   size to the widest cell in any row and stay aligned. The table fills its
+   panel, but never gets narrower than its columns content: on a narrow
+   screen it scrolls sideways instead of stretching the first column, and
+   rows stay as wide as their cells. */
+.data-table {
+  display: grid;
+  width: max(100%, var(--data-table-min-width, 0px));
+  min-width: max-content;
   font-size: 12px;
 }
 .data-table-head,
 .data-table-row {
   display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  min-width: var(--data-table-min-width, 760px);
 }
 .data-table-head > span,
 .data-table-row > span {
@@ -11319,6 +11296,11 @@ body {
 .data-table-row-link:focus-visible {
   outline: 2px solid var(--incora-yellow);
   outline-offset: -2px;
+}
+/* Truncated columns do not widen the table: their text wraps or ellipsizes
+   within the column base width instead. */
+.data-table-truncate {
+  contain: inline-size;
 }
 .data-table-align-center {
   justify-content: center;
@@ -13489,7 +13471,6 @@ button.setting-card-link {
 }
 
 .employee-table,
-.compact-table,
 .team-timesheet-table,
 .team-calendar,
 .inventory-table-scroll,

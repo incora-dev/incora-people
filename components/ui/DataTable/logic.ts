@@ -11,7 +11,7 @@ import type {
   SortDirection,
 } from "./types";
 
-export const DEFAULT_COLUMN_WIDTH = "minmax(130px, 1fr)";
+export const DEFAULT_COLUMN_MIN_WIDTH = 130;
 export const SELECT_COLUMN_WIDTH = "44px";
 const ACTION_BUTTON_WIDTH = 32;
 const ACTION_GAP = 6;
@@ -277,6 +277,41 @@ export function actionsColumnWidth(maxActions: number) {
   return `calc(${buttons}px + var(--data-table-inset, 15px))`;
 }
 
+/**
+ * Grid track of a column: as wide as its widest cell (max-content), plus
+ * a share of the spare width when grow is set; the header cell enforces the
+ * base width (columnMinWidth). A truncated column uses its base width (and
+ * grow share) instead of its content.
+ */
+export function columnTrack<Row>(column: DataTableColumn<Row>) {
+  if (column.width) return column.width;
+  const grow = column.grow ?? 0;
+  const base = `${column.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH}px`;
+  if (column.truncate) return grow > 0 ? `minmax(${base}, ${grow}fr)` : base;
+  return grow > 0 ? `minmax(max-content, ${grow}fr)` : "max-content";
+}
+
+/**
+ * Columns with the default sizing applied: when no column sets grow (or a
+ * raw width), the first column takes all spare width and the others stay
+ * as wide as their content.
+ */
+export function withDefaultGrow<Row>(
+  columns: readonly DataTableColumn<Row>[],
+): DataTableColumn<Row>[] {
+  const anyGrows = columns.some(
+    (column) => column.width || (column.grow ?? 0) > 0,
+  );
+  if (anyGrows || columns.length === 0) return [...columns];
+  return [{ ...columns[0], grow: 1 }, ...columns.slice(1)];
+}
+
+/** Base width the header cell enforces; none for raw or truncated tracks. */
+export function columnMinWidth<Row>(column: DataTableColumn<Row>) {
+  if (column.width || column.truncate) return undefined;
+  return `${column.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH}px`;
+}
+
 /** One grid template shared by the header and every row. */
 export function gridTemplateFor<Row>(
   columns: readonly DataTableColumn<Row>[],
@@ -284,7 +319,7 @@ export function gridTemplateFor<Row>(
 ) {
   return [
     ...(options.selectable ? [SELECT_COLUMN_WIDTH] : []),
-    ...columns.map((column) => column.width ?? DEFAULT_COLUMN_WIDTH),
+    ...withDefaultGrow(columns).map(columnTrack),
     ...(options.actionsWidth ? [options.actionsWidth] : []),
   ].join(" ");
 }

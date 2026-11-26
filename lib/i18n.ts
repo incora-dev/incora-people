@@ -209,6 +209,7 @@ const uk = {
   "Open receipt": "Відкрити чек",
   Withdraw: "Відкликати",
   "No reimbursements submitted yet.": "Запитів на відшкодування ще немає.",
+  "No leave requests yet.": "Заявок на відпустку ще немає.",
   "Needs approval": "Потребують погодження",
   pending: "на розгляді",
   "All expense requests are reviewed.":

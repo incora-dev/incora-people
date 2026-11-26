@@ -4,9 +4,12 @@ import {
   actionsColumnWidth,
   buildExportRows,
   clampPage,
+  columnMinWidth,
+  columnTrack,
   compareSortValues,
   dataTableReducer,
   gridTemplateFor,
+  withDefaultGrow,
   nextHeaderSort,
   pageCountFor,
   pageList,
@@ -213,13 +216,43 @@ test("one grid template covers selection, columns and actions", () => {
       selectable: true,
       actionsWidth: actionsColumnWidth(1),
     }),
-    "44px minmax(130px, 1fr) minmax(130px, 1fr) calc(42px + var(--data-table-inset, 15px))",
+    "44px minmax(max-content, 1fr) max-content calc(42px + var(--data-table-inset, 15px))",
   );
   assert.equal(
     actionsColumnWidth(2),
     "calc(80px + var(--data-table-inset, 15px))",
   );
   assert.equal(gridTemplateFor([{ ...columns[0], width: "200px" }]), "200px");
+});
+
+test("columns grow to their content unless truncated", () => {
+  const base = { key: "a", header: "A", cell: () => "" };
+  assert.equal(columnTrack(base), "max-content");
+  assert.equal(columnMinWidth(base), "130px");
+  const wide = { ...base, minWidth: 280, grow: 1.4 };
+  assert.equal(columnTrack(wide), "minmax(max-content, 1.4fr)");
+  assert.equal(columnMinWidth(wide), "280px");
+  const truncated = { ...wide, truncate: true };
+  assert.equal(columnTrack(truncated), "minmax(280px, 1.4fr)");
+  assert.equal(columnMinWidth(truncated), undefined);
+  assert.equal(columnTrack({ ...base, truncate: true }), "130px");
+  // With no grow set, the first column takes the spare width.
+  assert.equal(
+    gridTemplateFor([base, base]),
+    "minmax(max-content, 1fr) max-content",
+  );
+  assert.equal(
+    gridTemplateFor([{ ...base, truncate: true }, base]),
+    "minmax(130px, 1fr) max-content",
+  );
+  assert.deepEqual(withDefaultGrow([]), []);
+  assert.equal(
+    gridTemplateFor([base, wide]),
+    "max-content minmax(max-content, 1.4fr)",
+  );
+  const raw = { ...wide, width: "90px" };
+  assert.equal(columnTrack(raw), "90px");
+  assert.equal(columnMinWidth(raw), undefined);
 });
 
 test("selection toggles rows and the whole page", () => {

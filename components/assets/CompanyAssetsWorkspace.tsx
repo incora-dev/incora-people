@@ -100,8 +100,19 @@ export function CompanyAssetsWorkspace({
         exportValue: (asset) => [asset.name, asset.assetTag],
         cell: (asset) => (
           <span className="asset-name-cell">
-            <strong>{asset.name}</strong>
-            <small>{asset.assetTag}</small>
+            <span>
+              <strong>{asset.name}</strong>
+              <small>{asset.assetTag}</small>
+            </span>
+            <button
+              type="button"
+              className="asset-view-button"
+              aria-label={`${t("View asset")} ${asset.name}`}
+              title={t("View asset")}
+              onClick={() => setViewing(asset)}
+            >
+              <Eye size={16} />
+            </button>
           </span>
         ),
       },
@@ -212,13 +223,6 @@ export function CompanyAssetsWorkspace({
           onPageChange={setPage}
           exportFileName="assets"
           empty={{ icon: Wrench, text: t("No assets in this view.") }}
-          rowActions={(asset) => [
-            {
-              icon: Eye,
-              label: t("View asset"),
-              onClick: () => setViewing(asset),
-            },
-          ]}
           toolbar={({ viewSettings, exportMenu }) => (
             <div className="asset-toolbar" ref={toolbarRef}>
               <div

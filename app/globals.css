@@ -10765,7 +10765,7 @@ body {
   left: auto;
 }
 /* The export menu is exactly as wide as its "Export to" button. */
-.asset-toolbar-actions .asset-export-menu {
+.asset-toolbar-actions .data-table-export-menu {
   left: 0;
   min-width: 0;
 }
@@ -10783,7 +10783,7 @@ body {
   }
 }
 @media (max-width: 640px) {
-  .asset-toolbar-label,
+  .asset-toolbar-actions .data-table-toolbar-label,
   .asset-panel .asset-toolbar-actions .button > svg:last-child {
     display: none;
   }
@@ -10791,7 +10791,7 @@ body {
     flex: none;
   }
   /* The button is icon-only here, so the menu sizes to its items. */
-  .asset-toolbar-actions .asset-export-menu {
+  .asset-toolbar-actions .data-table-export-menu {
     left: auto;
     min-width: max-content;
   }
@@ -11121,11 +11121,11 @@ body {
   cursor: pointer;
 }
 
-.asset-view-menu {
+.data-table-view-menu {
   padding: 6px;
   font-size: 12px;
 }
-.asset-sort-row {
+.data-table-sort-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -11134,21 +11134,21 @@ body {
   background: #f5f6f8;
   white-space: nowrap;
 }
-.asset-sort-row > svg {
+.data-table-sort-row > svg {
   color: var(--muted);
 }
-.asset-sort-row > span {
+.data-table-sort-row > span {
   margin-right: auto;
   padding-right: 16px;
 }
-.asset-sort-direction {
+.data-table-sort-direction {
   display: flex;
   gap: 2px;
   padding: 2px;
   border-radius: 7px;
   background: #e9edf2;
 }
-.asset-sort-direction button {
+.data-table-sort-direction button {
   display: grid;
   width: 26px;
   height: 24px;
@@ -11160,15 +11160,15 @@ body {
   color: var(--muted);
   cursor: pointer;
 }
-.asset-sort-direction button.active {
+.data-table-sort-direction button.active {
   background: #fff;
   box-shadow: 0 1px 2px rgb(15 23 42 / 10%);
   color: var(--ink);
 }
-.asset-sort-field {
+.data-table-sort-field {
   position: relative;
 }
-.asset-sort-field > button {
+.data-table-sort-field > button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -11182,7 +11182,7 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
-.asset-sort-list {
+.data-table-sort-list {
   position: absolute;
   z-index: 2;
   top: calc(100% + 8px);
@@ -11198,7 +11198,7 @@ body {
   box-shadow: 0 14px 40px rgba(24, 24, 26, 0.14);
   list-style: none;
 }
-.asset-sort-list button {
+.data-table-sort-list button {
   position: relative;
   width: 100%;
   padding: 7px 10px;
@@ -11210,13 +11210,13 @@ body {
   text-align: left;
   cursor: pointer;
 }
-.asset-sort-list button:hover {
+.data-table-sort-list button:hover {
   background: #f5f6f8;
 }
-.asset-sort-list button.active {
+.data-table-sort-list button.active {
   background: #fdf6d8;
 }
-.asset-sort-list button.active::before {
+.data-table-sort-list button.active::before {
   position: absolute;
   top: 6px;
   bottom: 6px;
@@ -11227,64 +11227,200 @@ body {
   content: "";
 }
 
-.asset-panel {
-  overflow: visible;
+.data-table-column-list {
+  display: grid;
+  gap: 2px;
 }
-.asset-table {
+.data-table-sort-row + .data-table-column-list {
+  margin-top: 6px;
+}
+.data-table-column-list strong {
+  padding: 4px 6px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.data-table-column-list button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.data-table-column-list button:hover {
+  background: #f5f5f2;
+}
+.data-table-check {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.data-table-column-list [aria-checked="true"] > .data-table-check {
+  border-color: var(--incora-yellow);
+  background: var(--incora-yellow);
+}
+.data-table-export-menu {
+  display: grid;
+  gap: 4px;
+  min-width: 200px;
+  font-size: 12px;
+}
+.data-table-export-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.data-table-export-menu button:hover {
+  background: #f5f5f2;
+}
+
+/* DataTable (components/ui/DataTable): CSS grid with table roles. Narrow
+   screens scroll the table sideways; columns never hide or turn into cards. */
+.data-table-panel {
+  --data-table-row-height: 48px;
+  min-width: 0;
+}
+.data-table-compact {
+  --data-table-row-height: 36px;
+}
+.data-table {
   overflow-x: auto;
+  font-size: 12px;
 }
-.asset-table-head,
-.asset-table-row {
+.data-table-head,
+.data-table-row {
   display: grid;
   align-items: center;
-  min-width: 760px;
+  min-width: var(--data-table-min-width, 760px);
 }
-.asset-table-head > span,
-.asset-table-row > span {
+.data-table-head > span,
+.data-table-row > span {
+  display: flex;
+  min-width: 0;
+  align-self: stretch;
+  align-items: center;
   padding: 0 10px;
 }
 /* Same 15px side inset as the toolbar above. */
-.asset-table-head > span:first-child,
-.asset-table-row > span:first-child {
+.data-table-head > span:first-child,
+.data-table-row > span:first-child {
   padding-left: 15px;
 }
-.asset-table-head > span:last-child,
-.asset-table-row > span:last-child {
+.data-table-head > span:last-child,
+.data-table-row > span:last-child {
   padding-right: 15px;
 }
-.asset-table-head {
+.data-table-head {
   min-height: 42px;
   border-bottom: 1px solid var(--line);
   background: #fafafa;
   color: #60636a;
   font-family: var(--font-inter), sans-serif;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.asset-table-row {
-  min-height: 48px;
+.data-table-row {
+  min-height: var(--data-table-row-height);
   border-bottom: 1px solid #f0f0ed;
+  background: #fff;
   transition: background 140ms ease;
 }
-.asset-table-row > span {
-  display: flex;
-  align-self: stretch;
-  align-items: center;
-}
-.asset-table-row:hover {
+.data-table-row:hover,
+.data-table-row.selected {
   background: #fffdf5;
 }
-.asset-table-row > .asset-name-cell {
-  justify-content: space-between;
-  gap: 10px;
+.data-table-row-link {
+  cursor: pointer;
 }
-.asset-name-cell > span {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
+.data-table-row-link:focus-visible {
+  outline: 2px solid var(--incora-yellow);
+  outline-offset: -2px;
 }
-.asset-view-button {
+.data-table-align-center {
+  justify-content: center;
+  text-align: center;
+}
+.data-table-align-end {
+  justify-content: flex-end;
+  text-align: right;
+}
+.data-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.data-table-sort > svg {
+  flex: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+.data-table-sort:hover > svg,
+.data-table-sort:focus-visible > svg {
+  opacity: 0.55;
+}
+.data-table-sort.active {
+  color: var(--ink);
+}
+.data-table-sort.active > svg {
+  opacity: 1;
+}
+.data-table-select input {
+  margin: 0;
+}
+/* Pinned first column and actions column keep the row's background. */
+.data-table-sticky {
+  position: sticky;
+  z-index: 1;
+  left: 0;
+  background: inherit;
+}
+.data-table-select + .data-table-sticky {
+  left: 44px;
+}
+.data-table-actions {
+  position: sticky;
+  z-index: 1;
+  right: 0;
+  gap: 6px;
+  justify-content: flex-end;
+  background: inherit;
+}
+.data-table-overflow-start .data-table-sticky:not(.data-table-select) {
+  box-shadow: 8px 0 8px -8px rgb(15 23 42 / 18%);
+}
+.data-table-overflow-end .data-table-actions {
+  box-shadow: -8px 0 8px -8px rgb(15 23 42 / 18%);
+}
+.data-table-action {
   display: grid;
   width: 32px;
   height: 28px;
@@ -11300,9 +11436,97 @@ body {
   opacity: 0;
   transition: opacity 140ms ease;
 }
-.asset-table-row:hover .asset-view-button,
-.asset-view-button:focus-visible {
+.data-table-action.danger {
+  color: #c83b3b;
+}
+.data-table-action.danger:hover {
+  border-color: #f0c4c4;
+  background: #fff5f5;
+}
+.data-table-row:hover .data-table-action,
+.data-table-row:focus-within .data-table-action,
+.data-table-action:focus-visible {
   opacity: 1;
+}
+@media (hover: none) {
+  .data-table-action {
+    opacity: 1;
+  }
+}
+.data-table-skeleton-row,
+.data-table-skeleton-row:hover {
+  height: var(--data-table-row-height);
+  background: #fff;
+}
+.data-table-skeleton {
+  display: block;
+  width: 70%;
+  max-width: 160px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #f0f0ed 0%, #f8f8f6 50%, #f0f0ed 100%);
+  background-size: 200% 100%;
+  animation: data-table-shimmer 1.2s ease-in-out infinite;
+}
+@keyframes data-table-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .data-table-skeleton {
+    animation: none;
+  }
+}
+.data-table-empty {
+  padding: 28px;
+}
+.data-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.data-table-pagination nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.data-table-pagination button {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.data-table-pagination button:disabled {
+  color: #c4c4c0;
+  cursor: default;
+}
+.data-table-pagination button.active {
+  background: var(--incora-yellow);
+  font-weight: 700;
+}
+
+.asset-panel {
+  overflow: visible;
+}
+.asset-name-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 .asset-dialog {
   display: grid;
@@ -11474,11 +11698,6 @@ body {
     border-left: 0;
   }
 }
-@media (hover: none) {
-  .asset-view-button {
-    opacity: 1;
-  }
-}
 .asset-name-cell small,
 .asset-assignee small {
   color: var(--muted);
@@ -11512,58 +11731,9 @@ body {
   background: #fff6e0;
   color: #8b6500;
 }
-.asset-row-action {
-  opacity: 0;
-  transition: opacity 140ms ease;
-}
-.asset-table-row:hover .asset-row-action,
-.asset-row-action:focus-visible {
-  opacity: 1;
-}
-.asset-empty {
-  padding: 28px;
-}
-.asset-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12px;
-}
-.asset-pagination nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.asset-pagination button {
-  display: grid;
-  place-items: center;
-  min-width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-}
-.asset-pagination button:disabled {
-  color: #c4c4c0;
-  cursor: default;
-}
-.asset-pagination button.active {
-  background: var(--incora-yellow);
-  font-weight: 700;
-}
 @media (max-width: 900px) {
   .asset-page-heading {
     flex-wrap: wrap;
-  }
-  .asset-row-action {
-    opacity: 1;
   }
 }
 
@@ -11573,9 +11743,6 @@ body {
 .asset-menu,
 .asset-panel {
   font-size: 12px;
-}
-.asset-table-head {
-  font-size: 11px;
 }
 .asset-name-cell small,
 .asset-assignee small {

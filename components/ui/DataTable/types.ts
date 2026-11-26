@@ -50,7 +50,9 @@ export type DataTableRowAction = {
   icon: ComponentType<{ size?: number }>;
   /** Translated text for aria-label and title. */
   label: string;
-  onClick: () => void;
+  onClick?: () => void;
+  /** Renders a link that opens in a new tab instead of a button. */
+  href?: string;
   /** Shown in red; asks for confirmation before onClick runs. */
   danger?: boolean;
   /** Translated confirmation text for a danger action. */

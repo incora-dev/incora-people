@@ -9924,60 +9924,19 @@ body {
   font-size: 9px;
 }
 
-.expense-table-head,
-.expense-table-row {
-  display: grid;
-  grid-template-columns: minmax(220px, 1.6fr) 105px 110px 95px 110px;
-  align-items: center;
-  gap: 10px;
-  min-width: 700px;
-  min-height: 46px;
-  padding: 0 16px;
+.expense-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
-.expense-table {
-  overflow-x: auto;
-}
-
-.expense-table-head {
-  color: var(--muted);
-  background: #fafafa;
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.expense-table-row {
-  border-top: 1px solid #f0f0ed;
-  font-size: 10px;
-}
-
-.expense-table-row > span:first-child strong,
-.expense-table-row > span:first-child small {
-  display: block;
-}
-
-.expense-table-row > span:first-child small {
+.expense-cell small {
   margin-top: 2px;
   overflow: hidden;
-  color: var(--muted);
-  font-size: 8px;
+  color: #62656b;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.expense-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.expense-row-actions button {
-  border: 0;
-  color: var(--danger);
-  background: transparent;
-  font-size: 9px;
-  cursor: pointer;
 }
 
 .expense-approval-row {
@@ -11293,6 +11252,8 @@ body {
 
 /* DataTable (components/ui/DataTable): CSS grid with table roles. Narrow
    screens scroll the table sideways; columns never hide or turn into cards. */
+/* --data-table-inset: side padding of the first and last cells, so a page
+   can line the table up with its panel heading. */
 .data-table-panel {
   --data-table-row-height: 48px;
   min-width: 0;
@@ -11321,11 +11282,11 @@ body {
 /* Same 15px side inset as the toolbar above. */
 .data-table-head > span:first-child,
 .data-table-row > span:first-child {
-  padding-left: 15px;
+  padding-left: var(--data-table-inset, 15px);
 }
 .data-table-head > span:last-child,
 .data-table-row > span:last-child {
-  padding-right: 15px;
+  padding-right: var(--data-table-inset, 15px);
 }
 .data-table-head {
   min-height: 42px;
@@ -11426,6 +11387,7 @@ body {
 }
 .data-table-action {
   display: grid;
+  box-sizing: border-box;
   width: 32px;
   height: 28px;
   flex: none;
@@ -11437,8 +11399,6 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
   color: var(--ink);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 140ms ease;
 }
 .data-table-action.danger {
   color: #c83b3b;
@@ -11446,16 +11406,6 @@ body {
 .data-table-action.danger:hover {
   border-color: #f0c4c4;
   background: #fff5f5;
-}
-.data-table-row:hover .data-table-action,
-.data-table-row:focus-within .data-table-action,
-.data-table-action:focus-visible {
-  opacity: 1;
-}
-@media (hover: none) {
-  .data-table-action {
-    opacity: 1;
-  }
 }
 .data-table-skeleton-row,
 .data-table-skeleton-row:hover {
@@ -11493,7 +11443,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 10px calc(var(--data-table-inset, 15px) - 1px);
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 12px;
@@ -15088,8 +15038,7 @@ button.setting-card-link {
 .employee-table-head,
 .team-calendar-head,
 .settings-section .admin-balance-head,
-.settings-section .access-matrix-head,
-.expense-table-head {
+.settings-section .access-matrix-head {
   color: #60636a;
 }
 
@@ -15358,22 +15307,19 @@ button.setting-card-link {
 .settings-section .leave-policy-card p,
 .settings-section .admin-table-search input,
 .settings-section .admin-balance-row,
-.settings-section .access-matrix-row,
-.expense-table-row {
+.settings-section .access-matrix-row {
   font-size: 13px;
 }
 
 .settings-section .leave-policy-card span,
 .settings-section .admin-balance-head,
-.settings-section .access-matrix-head,
-.expense-table-head {
+.settings-section .access-matrix-head {
   font-size: 11px;
   color: #60636a;
 }
 
 .settings-section .admin-balance-row > span:first-child small,
-.settings-section .access-matrix-row > span:first-child small,
-.expense-table-row > span:first-child small {
+.settings-section .access-matrix-row > span:first-child small {
   color: #62656b;
   font-size: 11px;
 }
@@ -16824,14 +16770,9 @@ button.setting-card-link {
   line-height: 1.35;
 }
 
-.expense-workspace .expense-table-head,
-.expense-workspace .expense-table-row {
-  min-height: 50px;
-  padding-inline: 22px;
-}
-
-.expense-workspace .expense-table-head {
-  font-size: 11px;
+/* The table lines up with the 22px panel heading. */
+.expense-workspace .data-table-panel {
+  --data-table-inset: 22px;
 }
 
 .expense-workspace .expense-approval-row {
@@ -16957,9 +16898,8 @@ button.setting-card-link {
     padding: 12px 16px;
   }
 
-  .expense-workspace .expense-table-head,
-  .expense-workspace .expense-table-row {
-    padding-inline: 16px;
+  .expense-workspace .data-table-panel {
+    --data-table-inset: 16px;
   }
 
   .expense-workspace .expense-approval-row {

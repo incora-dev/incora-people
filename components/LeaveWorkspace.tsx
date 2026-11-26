@@ -10,10 +10,13 @@ import {
   Palmtree,
   Plus,
   Stethoscope,
+  Undo2,
   WalletCards,
   X,
 } from "lucide-react";
 import { useI18n } from "@/components/LocaleProvider";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type { DataTableColumn } from "@/components/ui/DataTable/types";
 import { DialogBackdrop } from "@/components/ui/DialogBackdrop";
 import { DateField } from "@/components/ui/DateField";
 import { formatCount } from "@/lib/i18n";
@@ -130,6 +133,43 @@ export function LeaveWorkspace({
     }
   }
 
+  const requestColumns = useMemo<DataTableColumn<LeaveRequest>[]>(
+    () => [
+      {
+        key: "type",
+        header: "Type",
+        sortValue: (item) => t(item.typeName),
+        cell: (item) => (
+          <span className="leave-type-cell">
+            <i style={{ background: item.color }} /> {t(item.typeName)}
+          </span>
+        ),
+      },
+      {
+        key: "dates",
+        header: "Dates",
+        width: "minmax(150px, 1.2fr)",
+        // ISO start dates sort in calendar order.
+        sortValue: (item) => item.startDate,
+        cell: (item) => formatDateRange(item.startDate, item.endDate, locale),
+      },
+      {
+        key: "days",
+        header: "Days",
+        width: "minmax(70px, 0.5fr)",
+        sortValue: (item) => item.days,
+        cell: (item) => item.days,
+      },
+      {
+        key: "status",
+        header: "Status",
+        sortValue: (item) => t(item.status.replace("_", " ")),
+        cell: (item) => <Status value={item.status} />,
+      },
+    ],
+    [locale, t],
+  );
+
   return (
     <div className="leave-workspace">
       <section className="page-heading-row">
@@ -212,40 +252,27 @@ export function LeaveWorkspace({
             </a>
           )}
         </div>
-        <div className="compact-table leave-request-table">
-          <div className="compact-table-head">
-            <span>{t("Type")}</span>
-            <span>{t("Dates")}</span>
-            <span>{t("Days")}</span>
-            <span>{t("Status")}</span>
-            <span />
-          </div>
-          {requestRows.map((item) => (
-            <div className="compact-table-row" key={item.id}>
-              <span className="leave-type-cell">
-                <i style={{ background: item.color }} /> {t(item.typeName)}
-              </span>
-              <span>
-                {formatDateRange(item.startDate, item.endDate, locale)}
-              </span>
-              <span>{item.days}</span>
-              <span>
-                <Status value={item.status} />
-              </span>
-              <span>
-                {!readOnlyPreview &&
-                  ["pending", "approved"].includes(item.status) && (
-                    <button
-                      className="row-menu-button"
-                      onClick={() => withdraw(item.id)}
-                    >
-                      {t("Withdraw")}
-                    </button>
-                  )}
-              </span>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={requestRows}
+          rowKey={(item) => item.id}
+          columns={requestColumns}
+          ariaLabel={t("My requests")}
+          defaultSort={{ key: "dates", direction: "desc" }}
+          minWidth={620}
+          empty={{ icon: CalendarDays, text: t("No leave requests yet.") }}
+          rowActions={(item) =>
+            !readOnlyPreview && ["pending", "approved"].includes(item.status)
+              ? [
+                  {
+                    icon: Undo2,
+                    label: t("Withdraw"),
+                    danger: true,
+                    onClick: () => withdraw(item.id),
+                  },
+                ]
+              : []
+          }
+        />
       </section>
 
       {canApprove && (

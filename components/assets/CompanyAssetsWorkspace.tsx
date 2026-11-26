@@ -120,6 +120,8 @@ export function CompanyAssetsWorkspace({
         key: "serialNumber",
         header: "Serial number",
         sortValue: (asset) => asset.serialNumber,
+        // The cell shows "—" when empty; the export leaves it blank.
+        exportValue: (asset) => asset.serialNumber,
         cell: (asset) => asset.serialNumber || "—",
       },
       {

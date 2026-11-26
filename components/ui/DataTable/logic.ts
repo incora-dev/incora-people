@@ -74,7 +74,16 @@ export function sortOptionsFor<Row>(
   columns: readonly DataTableColumn<Row>[],
   sortMenu: boolean | readonly DataTableSortOption<Row>[] | undefined,
 ): DataTableSortOption<Row>[] {
-  if (Array.isArray(sortMenu)) return [...sortMenu];
+  if (Array.isArray(sortMenu)) {
+    // An option without its own value needs a sortable column of that key,
+    // or choosing it would show it as active without sorting anything.
+    const sortable = new Set(
+      columns.filter((column) => column.sortValue).map((column) => column.key),
+    );
+    return sortMenu.filter(
+      (option) => option.sortValue || sortable.has(option.key),
+    );
+  }
   return columns
     .filter((column) => column.sortValue)
     .map((column) => ({ key: column.key, label: column.header }));
@@ -213,6 +222,33 @@ function exportCell(value: unknown) {
   return value === null || value === undefined ? "" : String(value);
 }
 
+function exportHeaders(column: {
+  exportHeader?: string | string[];
+  header: string;
+}) {
+  const header = column.exportHeader ?? column.header;
+  return Array.isArray(header) ? header : [header];
+}
+
+/**
+ * Export cells of one column: exportValue, else the cell when it renders
+ * non-empty plain text or a number (so it reads as on screen), else the sort value.
+ * Always as many cells as the column has export headers.
+ */
+function exportCells<Row>(column: DataTableColumn<Row>, row: Row) {
+  let value: unknown;
+  if (column.exportValue) value = column.exportValue(row);
+  else {
+    const cell = column.cell(row);
+    value =
+      (typeof cell === "string" && cell !== "") || typeof cell === "number"
+        ? cell
+        : column.sortValue?.(row);
+  }
+  const values = Array.isArray(value) ? value : [value];
+  return exportHeaders(column).map((_, index) => exportCell(values[index]));
+}
+
 /**
  * Spreadsheet rows for the given (already filtered and sorted) rows and
  * visible columns; the first row is the header.
@@ -222,21 +258,11 @@ export function buildExportRows<Row>(
   columns: readonly DataTableColumn<Row>[],
   t: (key: string) => string = (key) => key,
 ): string[][] {
-  const headers = columns.flatMap((column) => {
-    const header = column.exportHeader ?? column.header;
-    return (Array.isArray(header) ? header : [header]).map((key) => t(key));
-  });
+  const headers = columns.flatMap((column) =>
+    exportHeaders(column).map((key) => t(key)),
+  );
   const body = rows.map((row) =>
-    columns.flatMap((column) => {
-      const value = column.exportValue
-        ? column.exportValue(row)
-        : column.sortValue?.(row);
-      if (Array.isArray(value)) return value.map(exportCell);
-      const width = Array.isArray(column.exportHeader)
-        ? column.exportHeader.length
-        : 1;
-      return [exportCell(value), ...Array(width - 1).fill("")];
-    }),
+    columns.flatMap((column) => exportCells(column, row)),
   );
   return [headers, ...body];
 }
@@ -278,4 +304,13 @@ export function toggleRowSelection(
   return selected.includes(key)
     ? selected.filter((item) => item !== key)
     : [...selected, key];
+}
+
+/** Selected keys that still have a row; the rest were filtered away. */
+export function pruneSelection(
+  selected: readonly DataTableRowKey[],
+  rowKeys: readonly DataTableRowKey[],
+) {
+  const present = new Set(rowKeys);
+  return selected.filter((key) => present.has(key));
 }

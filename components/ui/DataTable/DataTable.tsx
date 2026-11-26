@@ -131,7 +131,9 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
       element.removeEventListener("scroll", update);
       observer.disconnect();
     };
-  }, []);
+    // The container keeps its size when columns change, but its content
+    // width does not: recalculate whenever the grid template changes.
+  }, [gridTemplate]);
 
   function activateRow(row: Row) {
     if (onRowClick) onRowClick(row);
@@ -302,7 +304,6 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                   key={key}
                   className={`data-table-row${clickable ? " data-table-row-link" : ""}${selected ? " selected" : ""}${extra ? ` ${extra}` : ""}`}
                   role="row"
-                  aria-selected={selectable ? selected : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   style={rowStyle}
                   onClick={
@@ -339,12 +340,12 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                   ))}
                   {rowActions && (
                     <span className="data-table-actions" role="cell">
-                      {actionsFor(row).map((action) => {
+                      {actionsFor(row).map((action, index) => {
                         const Icon = action.icon;
                         return (
                           <button
                             type="button"
-                            key={action.label}
+                            key={`${index}-${action.label}`}
                             className={`data-table-action${action.danger ? " danger" : ""}`}
                             aria-label={action.label}
                             title={action.label}
@@ -558,8 +559,7 @@ function ViewSettingsMenu<Row>({
                   <button
                     type="button"
                     key={column.key}
-                    role="menuitemcheckbox"
-                    aria-checked={shown}
+                    aria-pressed={shown}
                     onClick={() => onToggleColumn(column.key)}
                   >
                     <span className="data-table-check">

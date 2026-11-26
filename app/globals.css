@@ -11265,7 +11265,7 @@ body {
   border-radius: 4px;
   background: #fff;
 }
-.data-table-column-list [aria-checked="true"] > .data-table-check {
+.data-table-column-list [aria-pressed="true"] > .data-table-check {
   border-color: var(--incora-yellow);
   background: var(--incora-yellow);
 }

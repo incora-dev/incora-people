@@ -24,8 +24,9 @@ export type DataTableColumn<Row> = {
   defaultHidden?: boolean;
   /**
    * Export cell(s). Return an array to export the column as several
-   * spreadsheet columns; exportHeader then names each of them.
-   * Defaults to sortValue.
+   * spreadsheet columns; exportHeader then names each of them, and the
+   * values are padded or cut to that many. Defaults to the cell when it
+   * renders non-empty plain text or a number, else to sortValue.
    */
   exportValue?: (row: Row) => string | number | null | undefined | string[];
   /** Translation key(s) of the export header; defaults to header. */

@@ -13,6 +13,7 @@ import {
   pageRange,
   pageSlice,
   parseHiddenKeys,
+  pruneSelection,
   resolveSortValue,
   sortOptionsFor,
   sortRows,
@@ -223,4 +224,61 @@ test("selection toggles rows and the whole page", () => {
   assert.deepEqual(toggleRowSelection([1, 2], 1), [2]);
   assert.deepEqual(toggleAllSelection([9, 1], [1, 2, 3]), [9, 1, 2, 3]);
   assert.deepEqual(toggleAllSelection([9, 1, 2, 3], [1, 2, 3]), [9]);
+});
+
+test("sort menu drops options that would not sort anything", () => {
+  const options = sortOptionsFor(columns, [
+    { key: "code", label: "Code", sortValue: (p) => p.tag },
+    { key: "name", label: "Name" },
+    { key: "note", label: "Note" },
+    { key: "missing", label: "Missing" },
+  ]);
+  assert.deepEqual(
+    options.map((option) => option.key),
+    ["code", "name"],
+  );
+});
+
+test("export cells line up with their headers", () => {
+  const row = { name: "Laptop", tag: "A-1", extra: "x", date: 1795219200000 };
+  const exportColumns = [
+    {
+      key: "long",
+      header: "Name",
+      cell: () => "",
+      // More values than headers: cut to one.
+      exportValue: (r) => [r.name, r.tag, r.extra],
+    },
+    {
+      key: "short",
+      header: "Ignored",
+      exportHeader: ["Tag", "Extra"],
+      cell: () => "",
+      // Fewer values than headers: padded.
+      exportValue: (r) => [r.tag],
+    },
+    {
+      key: "date",
+      header: "Date",
+      // Plain-text cell is exported as shown, not the raw sort value.
+      cell: () => "2026-11-20",
+      sortValue: (r) => r.date,
+    },
+    {
+      key: "jsx",
+      header: "Rich",
+      cell: () => ({ type: "span" }),
+      sortValue: (r) => r.name,
+    },
+    { key: "none", header: "None", cell: () => null },
+  ];
+  assert.deepEqual(buildExportRows([row], exportColumns), [
+    ["Name", "Tag", "Extra", "Date", "Rich", "None"],
+    ["Laptop", "A-1", "", "2026-11-20", "Laptop", ""],
+  ]);
+});
+
+test("selection keeps only keys that still have a row", () => {
+  assert.deepEqual(pruneSelection([1, 4, 9], [1, 2, 3, 4]), [1, 4]);
+  assert.deepEqual(pruneSelection([], [1]), []);
 });

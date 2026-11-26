@@ -8,6 +8,7 @@ import {
   pageCountFor,
   pageSlice,
   parseHiddenKeys,
+  pruneSelection,
   resolveSortValue,
   sortOptionsFor,
   sortRows,
@@ -78,9 +79,10 @@ export function useDataTable<Row>({
     (next: DataTableSort) => {
       dispatch({ type: "sort", sort: next });
       onSortChange?.(next);
-      if (controlledPage !== undefined) onPageChange?.(1);
+      // A sort change returns to page 1; tell a parent that loads pages.
+      if (requestedPage !== 1) onPageChange?.(1);
     },
-    [controlledPage, onPageChange, onSortChange],
+    [requestedPage, onPageChange, onSortChange],
   );
   const setPage = useCallback(
     (next: number) => {
@@ -159,6 +161,15 @@ export function useDataTable<Row>({
     },
     [onSelectionChange],
   );
+  // Rows a filter took away stop being selected, so a bulk action never
+  // reaches rows the user cannot see. Server-side rows are one page only.
+  useEffect(() => {
+    if (serverSide || selection.length === 0) return;
+    const kept = pruneSelection(selection, sortedRows.map(rowKey));
+    // Syncs the parent through onSelectionChange; guarded, so it settles.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (kept.length !== selection.length) setSelection(kept);
+  }, [serverSide, selection, sortedRows, rowKey, setSelection]);
   const pageKeys = pageRows.map(rowKey);
   const selectedOnPage = pageKeys.filter((key) => selection.includes(key));
 

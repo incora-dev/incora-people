@@ -367,6 +367,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                               type="button"
                               key={`${index}-${action.label}`}
                               className={`data-table-action${action.danger ? " danger" : ""}`}
+                              disabled={action.disabled}
                               aria-label={action.label}
                               title={action.label}
                               onClick={() => runAction(action)}

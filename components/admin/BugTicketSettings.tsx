@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bug, ExternalLink } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Bug, Check, ExternalLink, RotateCcw } from "lucide-react";
 import { useI18n } from "@/components/LocaleProvider";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type {
+  DataTableColumn,
+  DataTableRowAction,
+} from "@/components/ui/DataTable/types";
 
 type BugTicket = {
   id: number;
@@ -15,11 +20,22 @@ type BugTicket = {
   createdAt: string;
 };
 
+function reporterName(report: BugTicket) {
+  return report.reporterFirstName
+    ? `${report.reporterFirstName} ${report.reporterLastName ?? ""}`.trim()
+    : report.reporterEmail;
+}
+
 export function BugTicketSettings() {
   const { t } = useI18n();
   const [reports, setReports] = useState<BugTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  // One status change at a time: each one notifies the reporter, so a
+  // double click must not send two.
+  const [busyId, setBusyId] = useState<number | null>(null);
+  // The ref blocks a second click that lands before the re-render.
+  const busyRef = useRef(false);
 
   useEffect(() => {
     fetch("/api/admin/bug-reports")
@@ -31,17 +47,25 @@ export function BugTicketSettings() {
   }, []);
 
   async function changeStatus(id: number, status: "open" | "resolved") {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusyId(id);
     setMessage("");
-    const response = await fetch(`/api/admin/bug-reports?id=${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    const result = (await response.json()) as {
-      report?: BugTicket;
-      error?: string;
-    };
-    if (!response.ok || !result.report) {
+    let result: { report?: BugTicket; error?: string } = {};
+    let ok = false;
+    try {
+      const response = await fetch(`/api/admin/bug-reports?id=${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      ok = response.ok;
+      result = (await response.json().catch(() => ({}))) as typeof result;
+    } finally {
+      busyRef.current = false;
+      setBusyId(null);
+    }
+    if (!ok || !result.report) {
       setMessage(result.error ?? "Не вдалося оновити повідомлення.");
       return;
     }
@@ -57,6 +81,59 @@ export function BugTicketSettings() {
     );
   }
 
+  const columns = useMemo<DataTableColumn<BugTicket>[]>(
+    () => [
+      {
+        key: "reporter",
+        header: "Reporter",
+        minWidth: 180,
+        sortValue: reporterName,
+        cell: (report) => (
+          <span className="bug-ticket-reporter">
+            <strong>{reporterName(report)}</strong>
+            {/* Without a name the email is already the bold line. */}
+            {report.reporterFirstName && <small>{report.reporterEmail}</small>}
+          </span>
+        ),
+      },
+      {
+        key: "description",
+        header: "Description",
+        minWidth: 260,
+        // Free text: takes the spare width and wraps instead of widening.
+        grow: 1,
+        truncate: true,
+        cell: (report) => (
+          <p className="bug-ticket-description">{report.description}</p>
+        ),
+      },
+      {
+        key: "created",
+        header: "Created",
+        minWidth: 100,
+        sortValue: (report) => report.createdAt,
+        cell: (report) => new Date(report.createdAt).toLocaleDateString(),
+      },
+      {
+        key: "status",
+        header: "Status",
+        minWidth: 100,
+        // "open" sorts before "resolved".
+        sortValue: (report) => report.status,
+        cell: (report) => (
+          <span
+            className={`status-badge ${
+              report.status === "resolved" ? "approved" : "pending"
+            }`}
+          >
+            {report.status === "resolved" ? t("Resolved") : t("Open")}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  );
+
   return (
     <section className="panel data-panel bug-ticket-panel">
       <div className="data-panel-heading">
@@ -70,77 +147,40 @@ export function BugTicketSettings() {
         </span>
       </div>
       {message && <p className="settings-inline-message">{message}</p>}
-      <div className="bug-ticket-table">
-        <div className="bug-ticket-head">
-          <span>{t("Reporter")}</span>
-          <span>{t("Description")}</span>
-          <span>{t("Screenshot")}</span>
-          <span>{t("Created")}</span>
-          <span>{t("Status")}</span>
-          <span />
-        </div>
-        {reports.map((report) => (
-          <div className="bug-ticket-row" key={report.id}>
-            <span data-label={t("Reporter")}>
-              <strong>
-                {report.reporterFirstName
-                  ? `${report.reporterFirstName} ${report.reporterLastName ?? ""}`
-                  : report.reporterEmail}
-              </strong>
-              <small>{report.reporterEmail}</small>
-            </span>
-            <p data-label={t("Description")}>{report.description}</p>
-            <span data-label={t("Screenshot")}>
-              {report.screenshotFileId && (
-                <a
-                  className="icon-button"
-                  href={`/api/files/${report.screenshotFileId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={t("Screenshot")}
-                >
-                  <ExternalLink size={15} />
-                </a>
-              )}
-            </span>
-            <small data-label={t("Created")}>
-              {new Date(report.createdAt).toLocaleDateString()}
-            </small>
-            <span
-              data-label={t("Status")}
-              className={`status-badge ${
-                report.status === "resolved" ? "approved" : "pending"
-              }`}
-            >
-              {report.status === "resolved" ? t("Resolved") : t("Open")}
-            </span>
-            <label
-              className="checkbox-field bug-ticket-resolution"
-              data-label={t("Resolution")}
-            >
-              <input
-                type="checkbox"
-                checked={report.status === "resolved"}
-                onChange={(event) =>
-                  changeStatus(
-                    report.id,
-                    event.currentTarget.checked ? "resolved" : "open",
-                  )
+      <DataTable
+        rows={reports}
+        rowKey={(report) => report.id}
+        columns={columns}
+        ariaLabel={t("Bug tickets")}
+        defaultSort={{ key: "created", direction: "desc" }}
+        loading={loading}
+        empty={{ icon: Bug, text: t("No bug tickets.") }}
+        rowActions={(report) => {
+          const actions: DataTableRowAction[] = [];
+          if (report.screenshotFileId)
+            actions.push({
+              icon: ExternalLink,
+              label: t("Screenshot"),
+              href: `/api/files/${report.screenshotFileId}`,
+            });
+          actions.push(
+            report.status === "resolved"
+              ? {
+                  icon: RotateCcw,
+                  label: t("Reopen ticket"),
+                  disabled: busyId !== null,
+                  onClick: () => changeStatus(report.id, "open"),
                 }
-              />
-              <span>
-                {report.status === "resolved"
-                  ? t("Resolved")
-                  : t("Mark resolved")}
-              </span>
-            </label>
-          </div>
-        ))}
-        {!loading && reports.length === 0 && (
-          <div className="compact-empty">{t("No bug tickets.")}</div>
-        )}
-        {loading && <div className="compact-empty">Завантаження…</div>}
-      </div>
+              : {
+                  icon: Check,
+                  label: t("Mark resolved"),
+                  disabled: busyId !== null,
+                  onClick: () => changeStatus(report.id, "resolved"),
+                },
+          );
+          return actions;
+        }}
+      />
     </section>
   );
 }

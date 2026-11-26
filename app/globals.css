@@ -565,42 +565,26 @@
   text-align: center;
 }
 
-.bug-ticket-table {
-  width: 100%;
-  max-width: 100%;
+/* The table lines up with the 16px panel heading. */
+.bug-ticket-panel .data-table-panel {
+  --data-table-inset: 16px;
+}
+
+.bug-ticket-reporter {
+  display: flex;
   min-width: 0;
-  overflow-x: auto;
+  flex-direction: column;
 }
 
-.bug-ticket-head,
-.bug-ticket-row {
-  align-items: center;
-  display: grid;
-  gap: 14px;
-  grid-template-columns:
-    minmax(180px, 0.8fr) minmax(260px, 1.5fr) 70px 100px 100px
-    minmax(180px, auto);
-  min-width: 1050px;
-  padding: 12px 16px;
-}
-
-.bug-ticket-head {
-  color: #727780;
+.bug-ticket-reporter small {
+  color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
-.bug-ticket-row {
-  border-top: 1px solid #e2e2dd;
-}
-
-.bug-ticket-row > span:first-child {
-  display: grid;
-}
-
-.bug-ticket-row p {
+.bug-ticket-description {
   margin: 0;
+  padding: 10px 0;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
@@ -9667,20 +9651,17 @@ body {
   }
 
   .settings-section .access-matrix-scroll,
-  .settings-section .admin-balance-table,
-  .settings-section .bug-ticket-table {
+  .settings-section .admin-balance-table {
     overflow-x: visible;
   }
 
   .settings-section .access-matrix-head,
-  .settings-section .admin-balance-head,
-  .settings-section .bug-ticket-head {
+  .settings-section .admin-balance-head {
     display: none;
   }
 
   .settings-section .access-matrix-row,
-  .settings-section .admin-balance-row,
-  .settings-section .bug-ticket-row {
+  .settings-section .admin-balance-row {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
@@ -9704,24 +9685,17 @@ body {
   }
 
   .settings-section .access-matrix-row > .button,
-  .settings-section .admin-balance-row > button,
-  .settings-section .bug-ticket-row .bug-ticket-resolution {
+  .settings-section .admin-balance-row > button {
     width: 100%;
     justify-content: center;
   }
 
-  .settings-section .admin-balance-row > span,
-  .settings-section .bug-ticket-row > span,
-  .settings-section .bug-ticket-row > p,
-  .settings-section .bug-ticket-row > small {
+  .settings-section .admin-balance-row > span {
     min-width: 0;
   }
 
   .settings-section .admin-balance-row > span::before,
-  .settings-section .admin-balance-row > strong::before,
-  .settings-section .bug-ticket-row > span::before,
-  .settings-section .bug-ticket-row > p::before,
-  .settings-section .bug-ticket-row > small::before {
+  .settings-section .admin-balance-row > strong::before {
     display: block;
     margin-bottom: 2px;
     color: var(--muted);
@@ -11381,6 +11355,10 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
   color: var(--ink);
   cursor: pointer;
+}
+.data-table-action:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 .data-table-action.danger {
   color: #c83b3b;
@@ -13755,7 +13733,6 @@ button.setting-card-link {
   }
 
   .access-matrix-scroll,
-  .bug-ticket-table,
   .admin-balance-table {
     border-radius: 0 0 12px 12px;
     scrollbar-width: auto;
@@ -15210,20 +15187,17 @@ button.setting-card-link {
   }
 
   .settings-section .access-matrix-scroll,
-  .settings-section .admin-balance-table,
-  .settings-section .bug-ticket-table {
+  .settings-section .admin-balance-table {
     overflow-x: visible;
   }
 
   .settings-section .access-matrix-head,
-  .settings-section .admin-balance-head,
-  .settings-section .bug-ticket-head {
+  .settings-section .admin-balance-head {
     display: none;
   }
 
   .settings-section .access-matrix-row,
-  .settings-section .admin-balance-row,
-  .settings-section .bug-ticket-row {
+  .settings-section .admin-balance-row {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
@@ -15247,24 +15221,16 @@ button.setting-card-link {
   }
 
   .settings-section .access-matrix-row > .button,
-  .settings-section .admin-balance-row > button,
-  .settings-section .bug-ticket-row .bug-ticket-resolution {
+  .settings-section .admin-balance-row > button {
     width: 100%;
     justify-content: center;
   }
 
-  .settings-section .admin-balance-row > span,
-  .settings-section .bug-ticket-row > span,
-  .settings-section .bug-ticket-row > p,
-  .settings-section .bug-ticket-row > small {
+  .settings-section .admin-balance-row > span {
     min-width: 0;
   }
 
-  .settings-section .admin-balance-row > span::before,
-  .settings-section .bug-ticket-row > span::before,
-  .settings-section .bug-ticket-row > p::before,
-  .settings-section .bug-ticket-row > small::before,
-  .settings-section .bug-ticket-row .bug-ticket-resolution::before {
+  .settings-section .admin-balance-row > span::before {
     display: block;
     margin-bottom: 2px;
     color: var(--muted);

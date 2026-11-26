@@ -73,6 +73,8 @@ export type DataTableRowAction = {
   danger?: boolean;
   /** Translated confirmation text for a danger action. */
   confirmText?: string;
+  /** Button is disabled, e.g. while its request is running. */
+  disabled?: boolean;
 };
 
 /** Controls DataTable renders for the toolbar slot to place. */

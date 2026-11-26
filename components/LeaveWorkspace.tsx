@@ -258,7 +258,6 @@ export function LeaveWorkspace({
           columns={requestColumns}
           ariaLabel={t("My requests")}
           defaultSort={{ key: "dates", direction: "desc" }}
-          minWidth={620}
           empty={{ icon: CalendarDays, text: t("No leave requests yet.") }}
           rowActions={(item) =>
             !readOnlyPreview && ["pending", "approved"].includes(item.status)

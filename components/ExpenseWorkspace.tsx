@@ -338,7 +338,6 @@ export function ExpenseWorkspace({
           columns={requestColumns}
           ariaLabel={t("My reimbursements")}
           defaultSort={{ key: "date", direction: "desc" }}
-          minWidth={700}
           empty={{
             icon: ReceiptText,
             text: t("No reimbursements submitted yet."),

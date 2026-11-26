@@ -11231,10 +11231,14 @@ body {
   overflow-x: auto;
 }
 /* One grid for the whole table; header and rows are subgrids, so columns
-   size to the widest cell in any row and stay aligned. */
+   size to the widest cell in any row and stay aligned. The table fills its
+   panel, but never gets narrower than its columns content: on a narrow
+   screen it scrolls sideways instead of stretching the first column, and
+   rows stay as wide as their cells. */
 .data-table {
   display: grid;
-  min-width: var(--data-table-min-width, 760px);
+  width: max(100%, var(--data-table-min-width, 0px));
+  min-width: max-content;
   font-size: 12px;
 }
 .data-table-head,
@@ -11292,6 +11296,11 @@ body {
 .data-table-row-link:focus-visible {
   outline: 2px solid var(--incora-yellow);
   outline-offset: -2px;
+}
+/* Truncated columns do not widen the table: their text wraps or ellipsizes
+   within the column base width instead. */
+.data-table-truncate {
+  contain: inline-size;
 }
 .data-table-align-center {
   justify-content: center;

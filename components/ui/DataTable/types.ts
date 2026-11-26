@@ -98,7 +98,11 @@ export type DataTableProps<Row> = {
   /** Rows per page; false shows every row. Defaults to 20. */
   pageSize?: number | false;
   density?: DataTableDensity;
-  /** Minimum table width; narrower screens scroll sideways. */
+  /**
+   * Optional minimum table width in px. Without it the table is as wide as
+   * its panel, or as its columns content when that is wider (then it
+   * scrolls sideways and the first column does not stretch).
+   */
   minWidth?: number;
   rowHref?: (row: Row) => string | null | undefined;
   onRowClick?: (row: Row) => void;

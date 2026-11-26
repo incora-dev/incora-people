@@ -76,7 +76,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
     sortMenu,
     pageSize = 20,
     density = "regular",
-    minWidth = 760,
+    minWidth,
     rowHref,
     onRowClick,
     rowClassName,
@@ -105,9 +105,9 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
   const stickyColumn = table.visibleColumns[0]?.sticky
     ? table.visibleColumns[0].key
     : null;
-  const style = {
-    "--data-table-min-width": `${minWidth}px`,
-  } as CSSProperties;
+  const style = (
+    minWidth ? { "--data-table-min-width": `${minWidth}px` } : {}
+  ) as CSSProperties;
   // Rows are subgrids of the table, so one template sizes every row and a
   // column can grow to fit its widest cell.
   const tableStyle = { gridTemplateColumns: gridTemplate };
@@ -240,7 +240,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                 <span
                   key={column.key}
                   role="columnheader"
-                  className={`${alignClass(column.align)}${stickyClass(column.key)}`.trim()}
+                  className={`${alignClass(column.align)}${stickyClass(column.key)}${column.truncate ? " data-table-truncate" : ""}`.trim()}
                   style={{ minWidth: columnMinWidth(column) }}
                   aria-sort={
                     column.sortValue
@@ -337,7 +337,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                         key={column.key}
                         role="cell"
                         className={
-                          `${alignClass(column.align)}${stickyClass(column.key)}`.trim() ||
+                          `${alignClass(column.align)}${stickyClass(column.key)}${column.truncate ? " data-table-truncate" : ""}`.trim() ||
                           undefined
                         }
                       >

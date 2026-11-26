@@ -24,6 +24,7 @@ import {
   AssetFilterMenu,
 } from "@/components/assets/AssetFilterMenu";
 import { csvCell } from "@/lib/csv";
+import { buildXlsx, XLSX_MIME } from "@/lib/xlsx";
 import {
   countAssetFilters,
   emptyAssetFilters,
@@ -176,35 +177,54 @@ export function CompanyAssetsWorkspace({
     };
   }
 
-  function exportCsv() {
+  /** Visible rows with the table's columns; the first row is the header. */
+  function exportRows() {
     const header = ["Name", "Asset tag", ...columns.map((c) => c.label)];
-    const rows = visible.map((asset) => [
-      asset.name,
-      asset.assetTag,
-      ...columns.map((column) =>
-        column.key === "serialNumber"
-          ? asset.serialNumber
-          : column.key === "category"
-            ? t(asset.category)
-            : asset.assignee
-              ? `${asset.assignee.firstName} ${asset.assignee.lastName}`
-              : asset.status === "repair"
-                ? t("In repair")
-                : "",
-      ),
-    ]);
-    const csv = [header.map((h) => t(h)), ...rows]
-      .map((row) => row.map(csvCell).join(","))
-      .join("\r\n");
-    const url = URL.createObjectURL(
-      new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" }),
-    );
+    return [
+      header.map((h) => t(h)),
+      ...visible.map((asset) => [
+        asset.name,
+        asset.assetTag,
+        ...columns.map((column) =>
+          column.key === "serialNumber"
+            ? asset.serialNumber
+            : column.key === "category"
+              ? t(asset.category)
+              : asset.assignee
+                ? `${asset.assignee.firstName} ${asset.assignee.lastName}`
+                : asset.status === "repair"
+                  ? t("In repair")
+                  : "",
+        ),
+      ]),
+    ];
+  }
+
+  function download(blob: Blob, fileName: string) {
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "assets.csv";
+    link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
     setOpenMenu(null);
+  }
+
+  function exportCsv() {
+    const csv = exportRows()
+      .map((row) => row.map(csvCell).join(","))
+      .join("\r\n");
+    download(
+      new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }),
+      "assets.csv",
+    );
+  }
+
+  function exportXlsx() {
+    download(
+      new Blob([buildXlsx(exportRows(), t("Assets"))], { type: XLSX_MIME }),
+      "assets.xlsx",
+    );
   }
 
   return (
@@ -423,6 +443,9 @@ export function CompanyAssetsWorkspace({
                   className="dropdown-panel asset-menu"
                   aria-label={t("Export to")}
                 >
+                  <button type="button" onClick={exportXlsx}>
+                    Excel (.xlsx)
+                  </button>
                   <button type="button" onClick={exportCsv}>
                     CSV
                   </button>

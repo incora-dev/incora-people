@@ -565,11 +565,6 @@
   text-align: center;
 }
 
-/* The table lines up with the 16px panel heading. */
-.bug-ticket-panel .data-table-panel {
-  --data-table-inset: 16px;
-}
-
 .bug-ticket-reporter {
   display: flex;
   min-width: 0;
@@ -6546,7 +6541,6 @@ h2 {
   font-size: 10px;
 }
 
-.admin-balance-table,
 .access-matrix-scroll {
   width: 100%;
   max-width: 100%;
@@ -6554,20 +6548,6 @@ h2 {
   overflow-x: auto;
 }
 
-.admin-balance-head,
-.admin-balance-row {
-  display: grid;
-  grid-template-columns:
-    minmax(170px, 1.4fr) minmax(130px, 1fr)
-    80px 85px 65px 75px 58px;
-  align-items: center;
-  gap: 8px;
-  min-width: 760px;
-  min-height: 42px;
-  padding: 0 16px;
-}
-
-.admin-balance-head,
 .access-matrix-head {
   color: var(--muted);
   background: #fafafa;
@@ -6576,20 +6556,16 @@ h2 {
   text-transform: uppercase;
 }
 
-.admin-balance-row {
-  border-top: 1px solid #f0f0ed;
-  font-size: 10px;
+.admin-balance-employee {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
-.admin-balance-row > span:first-child strong,
-.admin-balance-row > span:first-child small {
-  display: block;
-}
-
-.admin-balance-row > span:first-child small {
+.admin-balance-employee small {
   margin-top: 2px;
-  color: var(--muted);
-  font-size: 8px;
+  color: #62656b;
+  font-size: 11px;
 }
 
 .access-matrix {
@@ -7985,7 +7961,6 @@ h2 {
 }
 
 .mini-calendar-button,
-.row-menu-button,
 .compact-control,
 .square-control {
   display: inline-flex;
@@ -9299,20 +9274,16 @@ h2 {
   line-height: 1.4;
 }
 
-.settings-section .admin-balance-head,
-.settings-section .admin-balance-row,
 .settings-section .access-matrix-head,
 .settings-section .access-matrix-row {
   padding-inline: 18px;
 }
 
-.settings-section .admin-balance-head,
 .settings-section .access-matrix-head {
   min-height: 44px;
   font-size: 9px;
 }
 
-.settings-section .admin-balance-row,
 .settings-section .access-matrix-row {
   min-height: 52px;
   font-size: 11px;
@@ -9365,8 +9336,9 @@ h2 {
   font-size: 10px;
 }
 
-/* The table lines up with the 18px panel heading (15px on phones). */
-.leave-workspace .data-table-panel {
+/* Tables line up with the 18px panel heading (15px on phones). */
+.leave-workspace .data-table-panel,
+.settings-section .data-table-panel {
   --data-table-inset: 18px;
 }
 
@@ -9397,7 +9369,8 @@ h2 {
     padding: 15px;
   }
 
-  .leave-workspace .data-table-panel {
+  .leave-workspace .data-table-panel,
+  .settings-section .data-table-panel {
     --data-table-inset: 15px;
   }
 
@@ -9513,7 +9486,6 @@ body {
 .directory-meta,
 .employee-table-head,
 .team-calendar-head,
-.settings-section .admin-balance-head,
 .settings-section .access-matrix-head {
   color: #66686d;
   font-size: 11px;
@@ -9650,18 +9622,15 @@ body {
     white-space: nowrap;
   }
 
-  .settings-section .access-matrix-scroll,
-  .settings-section .admin-balance-table {
+  .settings-section .access-matrix-scroll {
     overflow-x: visible;
   }
 
-  .settings-section .access-matrix-head,
-  .settings-section .admin-balance-head {
+  .settings-section .access-matrix-head {
     display: none;
   }
 
-  .settings-section .access-matrix-row,
-  .settings-section .admin-balance-row {
+  .settings-section .access-matrix-row {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
@@ -9684,25 +9653,9 @@ body {
     font-size: 12px;
   }
 
-  .settings-section .access-matrix-row > .button,
-  .settings-section .admin-balance-row > button {
+  .settings-section .access-matrix-row > .button {
     width: 100%;
     justify-content: center;
-  }
-
-  .settings-section .admin-balance-row > span {
-    min-width: 0;
-  }
-
-  .settings-section .admin-balance-row > span::before,
-  .settings-section .admin-balance-row > strong::before {
-    display: block;
-    margin-bottom: 2px;
-    color: var(--muted);
-    content: attr(data-label);
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
   }
 
   .calendar-agenda-item {
@@ -11255,6 +11208,19 @@ body {
   border-bottom: 1px solid #f0f0ed;
   background: #fff;
   transition: background 140ms ease;
+}
+/* Invisible rows that only size the columns (see sizingRowsFor). */
+.data-table-row.data-table-sizer {
+  min-height: 0;
+  height: 0;
+  overflow: hidden;
+  border: 0;
+  visibility: hidden;
+}
+.data-table-sizer > span {
+  height: 0;
+  padding-block: 0;
+  overflow: hidden;
 }
 /* The panel edge or the pagination border closes the table. */
 .data-table-row:last-child {
@@ -13732,8 +13698,7 @@ button.setting-card-link {
     padding: 14px;
   }
 
-  .access-matrix-scroll,
-  .admin-balance-table {
+  .access-matrix-scroll {
     border-radius: 0 0 12px 12px;
     scrollbar-width: auto;
   }
@@ -14995,7 +14960,6 @@ button.setting-card-link {
 .directory-meta,
 .employee-table-head,
 .team-calendar-head,
-.settings-section .admin-balance-head,
 .settings-section .access-matrix-head {
   color: #60636a;
 }
@@ -15004,7 +14968,6 @@ button.setting-card-link {
 .directory-meta,
 .employee-table-head,
 .team-calendar-head,
-.settings-section .admin-balance-head,
 .settings-section .access-matrix-head {
   font-size: 11px;
 }
@@ -15186,18 +15149,15 @@ button.setting-card-link {
     white-space: nowrap;
   }
 
-  .settings-section .access-matrix-scroll,
-  .settings-section .admin-balance-table {
+  .settings-section .access-matrix-scroll {
     overflow-x: visible;
   }
 
-  .settings-section .access-matrix-head,
-  .settings-section .admin-balance-head {
+  .settings-section .access-matrix-head {
     display: none;
   }
 
-  .settings-section .access-matrix-row,
-  .settings-section .admin-balance-row {
+  .settings-section .access-matrix-row {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
@@ -15220,24 +15180,9 @@ button.setting-card-link {
     font-size: 12px;
   }
 
-  .settings-section .access-matrix-row > .button,
-  .settings-section .admin-balance-row > button {
+  .settings-section .access-matrix-row > .button {
     width: 100%;
     justify-content: center;
-  }
-
-  .settings-section .admin-balance-row > span {
-    min-width: 0;
-  }
-
-  .settings-section .admin-balance-row > span::before {
-    display: block;
-    margin-bottom: 2px;
-    color: var(--muted);
-    content: attr(data-label);
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
   }
 
   .calendar-agenda-item {
@@ -15253,19 +15198,16 @@ button.setting-card-link {
 .settings-section .admin-help p,
 .settings-section .leave-policy-card p,
 .settings-section .admin-table-search input,
-.settings-section .admin-balance-row,
 .settings-section .access-matrix-row {
   font-size: 13px;
 }
 
 .settings-section .leave-policy-card span,
-.settings-section .admin-balance-head,
 .settings-section .access-matrix-head {
   font-size: 11px;
   color: #60636a;
 }
 
-.settings-section .admin-balance-row > span:first-child small,
 .settings-section .access-matrix-row > span:first-child small {
   color: #62656b;
   font-size: 11px;

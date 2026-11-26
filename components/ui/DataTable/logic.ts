@@ -353,3 +353,32 @@ export function pruneSelection(
   const present = new Set(rowKeys);
   return selected.filter((key) => present.has(key));
 }
+
+/** Rows per column that size it: the ones with the longest text. */
+export const SIZING_ROWS_PER_COLUMN = 3;
+
+/**
+ * The few rows that decide column widths: for each column, the rows whose
+ * text (as exported: exportValue, plain-text cell or sortValue) is longest.
+ * Rendering only these, invisibly, keeps widths stable across pages, search
+ * and filters without laying out every row.
+ */
+export function sizingRowsFor<Row>(
+  rows: readonly Row[],
+  columns: readonly DataTableColumn<Row>[],
+  perColumn = SIZING_ROWS_PER_COLUMN,
+): Row[] {
+  const picked = new Set<Row>();
+  for (const column of columns) {
+    if (column.truncate || column.width) continue;
+    const ranked = rows
+      .map((row) => ({
+        row,
+        length: exportCells(column, row).join(" ").length,
+      }))
+      .sort((a, b) => b.length - a.length)
+      .slice(0, perColumn);
+    ranked.forEach(({ row }) => picked.add(row));
+  }
+  return rows.filter((row) => picked.has(row));
+}

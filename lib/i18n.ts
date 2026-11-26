@@ -1746,6 +1746,8 @@ const uk = {
   Adjustment: "Коригування",
   Used: "Використано",
   Available: "Доступно",
+  "No matching balances.": "Балансів за цим пошуком немає.",
+  "No balances yet.": "Балансів ще немає.",
   Edit: "Редагувати",
   Protected: "Захищено",
   Save: "Зберегти",

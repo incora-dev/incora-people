@@ -10764,6 +10764,11 @@ body {
   right: 0;
   left: auto;
 }
+/* The export menu is exactly as wide as its "Export to" button. */
+.asset-toolbar-actions .asset-export-menu {
+  left: 0;
+  min-width: 0;
+}
 @media (max-width: 1100px) {
   /* Search drops to its own full-width row; actions stay on the first row. */
   .asset-toolbar .asset-search {
@@ -10784,6 +10789,11 @@ body {
   }
   .asset-panel .asset-toolbar-actions .button > svg:first-child {
     flex: none;
+  }
+  /* The button is icon-only here, so the menu sizes to its items. */
+  .asset-toolbar-actions .asset-export-menu {
+    left: auto;
+    min-width: max-content;
   }
   /* :not() matches the specificity of the desktop padding rule above. */
   .asset-panel .asset-toolbar-actions .button:not(.asset-filter-button) {

@@ -13,7 +13,19 @@ export type DataTableColumn<Row> = {
   /** Translation key; rendered through t(). */
   header: string;
   cell: (row: Row) => ReactNode;
-  /** Grid track; defaults to minmax(130px, 1fr). */
+  /**
+   * Base width in px (default 130). The column grows past it when its
+   * content is wider, unless truncate is set.
+   */
+  minWidth?: number;
+  /** Share of the spare width, like an fr unit (default 1). */
+  grow?: number;
+  /**
+   * Keep the column at its base width share and let long content wrap or
+   * ellipsize instead of widening the table (free text, descriptions).
+   */
+  truncate?: boolean;
+  /** Raw grid track; overrides minWidth, grow and truncate. */
   width?: string;
   align?: DataTableAlign;
   /** Makes the column sortable by header click and in the sort menu. */

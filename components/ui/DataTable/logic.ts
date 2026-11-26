@@ -11,7 +11,7 @@ import type {
   SortDirection,
 } from "./types";
 
-export const DEFAULT_COLUMN_WIDTH = "minmax(130px, 1fr)";
+export const DEFAULT_COLUMN_MIN_WIDTH = 130;
 export const SELECT_COLUMN_WIDTH = "44px";
 const ACTION_BUTTON_WIDTH = 32;
 const ACTION_GAP = 6;
@@ -277,6 +277,26 @@ export function actionsColumnWidth(maxActions: number) {
   return `calc(${buttons}px + var(--data-table-inset, 15px))`;
 }
 
+/**
+ * Grid track of a column. By default it is at least as wide as its widest
+ * cell (max-content) and shares the spare width by grow; the header cell
+ * enforces the base width (columnMinWidth). A truncated column is fixed to
+ * its base width share instead.
+ */
+export function columnTrack<Row>(column: DataTableColumn<Row>) {
+  if (column.width) return column.width;
+  const grow = column.grow ?? 1;
+  return column.truncate
+    ? `minmax(${column.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH}px, ${grow}fr)`
+    : `minmax(max-content, ${grow}fr)`;
+}
+
+/** Base width the header cell enforces; none for raw or truncated tracks. */
+export function columnMinWidth<Row>(column: DataTableColumn<Row>) {
+  if (column.width || column.truncate) return undefined;
+  return `${column.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH}px`;
+}
+
 /** One grid template shared by the header and every row. */
 export function gridTemplateFor<Row>(
   columns: readonly DataTableColumn<Row>[],
@@ -284,7 +304,7 @@ export function gridTemplateFor<Row>(
 ) {
   return [
     ...(options.selectable ? [SELECT_COLUMN_WIDTH] : []),
-    ...columns.map((column) => column.width ?? DEFAULT_COLUMN_WIDTH),
+    ...columns.map(columnTrack),
     ...(options.actionsWidth ? [options.actionsWidth] : []),
   ].join(" ");
 }

@@ -345,7 +345,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                         if (action.href)
                           return (
                             <a
-                              key={action.label}
+                              key={`${index}-${action.label}`}
                               className="data-table-action"
                               href={action.href}
                               target="_blank"

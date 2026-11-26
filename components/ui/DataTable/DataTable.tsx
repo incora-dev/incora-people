@@ -152,7 +152,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
 
   function runAction(action: DataTableRowAction) {
     if (action.danger) setConfirming(action);
-    else action.onClick();
+    else action.onClick?.();
   }
 
   function exportRows() {
@@ -342,6 +342,20 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                     <span className="data-table-actions" role="cell">
                       {actionsFor(row).map((action, index) => {
                         const Icon = action.icon;
+                        if (action.href)
+                          return (
+                            <a
+                              key={action.label}
+                              className="data-table-action"
+                              href={action.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={action.label}
+                              title={action.label}
+                            >
+                              <Icon size={16} />
+                            </a>
+                          );
                         return (
                           <button
                             type="button"
@@ -382,7 +396,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
           onCancel={() => setConfirming(null)}
           onConfirm={() => {
             setConfirming(null);
-            confirming.onClick();
+            confirming.onClick?.();
           }}
         />
       )}

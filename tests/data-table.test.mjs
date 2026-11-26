@@ -213,9 +213,12 @@ test("one grid template covers selection, columns and actions", () => {
       selectable: true,
       actionsWidth: actionsColumnWidth(1),
     }),
-    "44px minmax(130px, 1fr) minmax(130px, 1fr) 57px",
+    "44px minmax(130px, 1fr) minmax(130px, 1fr) calc(42px + var(--data-table-inset, 15px))",
   );
-  assert.equal(actionsColumnWidth(2), "95px");
+  assert.equal(
+    actionsColumnWidth(2),
+    "calc(80px + var(--data-table-inset, 15px))",
+  );
   assert.equal(gridTemplateFor([{ ...columns[0], width: "200px" }]), "200px");
 });
 

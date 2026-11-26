@@ -15,8 +15,8 @@ export const DEFAULT_COLUMN_WIDTH = "minmax(130px, 1fr)";
 export const SELECT_COLUMN_WIDTH = "44px";
 const ACTION_BUTTON_WIDTH = 32;
 const ACTION_GAP = 6;
-/** 10px left and 15px right padding of the actions cell. */
-const ACTIONS_PADDING = 25;
+/** Left padding of the actions cell; the right one is the table inset. */
+const ACTIONS_PADDING_START = 10;
 
 export function isEmptySortValue(value: DataTableSortValue) {
   return (
@@ -270,7 +270,11 @@ export function buildExportRows<Row>(
 /** Width of the actions column for the most buttons any row shows. */
 export function actionsColumnWidth(maxActions: number) {
   const count = Math.max(1, maxActions);
-  return `${count * ACTION_BUTTON_WIDTH + (count - 1) * ACTION_GAP + ACTIONS_PADDING}px`;
+  const buttons =
+    count * ACTION_BUTTON_WIDTH +
+    (count - 1) * ACTION_GAP +
+    ACTIONS_PADDING_START;
+  return `calc(${buttons}px + var(--data-table-inset, 15px))`;
 }
 
 /** One grid template shared by the header and every row. */

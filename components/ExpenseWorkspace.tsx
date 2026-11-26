@@ -7,10 +7,16 @@ import {
   ExternalLink,
   Plus,
   ReceiptText,
+  Undo2,
   WalletCards,
   X,
 } from "lucide-react";
 import { useI18n } from "@/components/LocaleProvider";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type {
+  DataTableColumn,
+  DataTableRowAction,
+} from "@/components/ui/DataTable/types";
 import { DialogBackdrop } from "@/components/ui/DialogBackdrop";
 import { DateField } from "@/components/ui/DateField";
 import { formatCount } from "@/lib/i18n";
@@ -220,6 +226,51 @@ export function ExpenseWorkspace({
     }
   }
 
+  const requestColumns = useMemo<DataTableColumn<RequestRow>[]>(
+    () => [
+      {
+        key: "expense",
+        header: "Expense",
+        width: "minmax(220px, 1.6fr)",
+        sortValue: (item) => t(item.category),
+        cell: (item) => (
+          <span className="expense-cell">
+            <strong>{t(item.category)}</strong>
+            <small>{item.description}</small>
+          </span>
+        ),
+      },
+      {
+        key: "date",
+        header: "Date",
+        width: "minmax(105px, 0.8fr)",
+        sortValue: (item) => item.expenseDate,
+        cell: (item) => item.expenseDate,
+      },
+      {
+        key: "amount",
+        header: "Amount",
+        width: "minmax(110px, 0.8fr)",
+        sortValue: (item) => item.amountCents,
+        cell: (item) => (
+          <strong>{money(item.amountCents, item.currency)}</strong>
+        ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        width: "minmax(110px, 0.8fr)",
+        sortValue: (item) => t(item.status),
+        cell: (item) => (
+          <span className={`status-badge ${item.status}`}>
+            {t(item.status)}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  );
+
   const currency = policy?.currency ?? "UAH";
   return (
     <div className="expense-workspace">
@@ -279,50 +330,36 @@ export function ExpenseWorkspace({
             </span>
           </div>
         </div>
-        <div className="expense-table">
-          <div className="expense-table-head">
-            <span>{t("Expense")}</span>
-            <span>{t("Date")}</span>
-            <span>{t("Amount")}</span>
-            <span>{t("Status")}</span>
-            <span />
-          </div>
-          {requests.map((item) => (
-            <div className="expense-table-row" key={item.id}>
-              <span>
-                <strong>{t(item.category)}</strong>
-                <small>{item.description}</small>
-              </span>
-              <span>{item.expenseDate}</span>
-              <strong>{money(item.amountCents, item.currency)}</strong>
-              <span className={`status-badge ${item.status}`}>
-                {t(item.status)}
-              </span>
-              <span className="expense-row-actions">
-                {!readOnlyPreview && item.receiptUrl && (
-                  <a
-                    href={item.receiptUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={t("Open receipt")}
-                  >
-                    <ExternalLink size={14} />
-                  </a>
-                )}
-                {!readOnlyPreview && item.status === "pending" && (
-                  <button onClick={() => withdraw(item.id)}>
-                    {t("Withdraw")}
-                  </button>
-                )}
-              </span>
-            </div>
-          ))}
-          {requests.length === 0 && (
-            <div className="compact-empty">
-              {t("No reimbursements submitted yet.")}
-            </div>
-          )}
-        </div>
+        <DataTable
+          rows={requests}
+          rowKey={(item) => item.id}
+          columns={requestColumns}
+          ariaLabel={t("My reimbursements")}
+          defaultSort={{ key: "date", direction: "desc" }}
+          minWidth={700}
+          empty={{
+            icon: ReceiptText,
+            text: t("No reimbursements submitted yet."),
+          }}
+          rowActions={(item) => {
+            if (readOnlyPreview) return [];
+            const actions: DataTableRowAction[] = [];
+            if (item.receiptUrl)
+              actions.push({
+                icon: ExternalLink,
+                label: t("Open receipt"),
+                href: item.receiptUrl,
+              });
+            if (item.status === "pending")
+              actions.push({
+                icon: Undo2,
+                label: t("Withdraw"),
+                danger: true,
+                onClick: () => withdraw(item.id),
+              });
+            return actions;
+          }}
+        />
       </section>
       {quarterlyOpen && canViewQuarterly && (
         <DialogBackdrop onClose={() => setQuarterlyOpen(false)}>

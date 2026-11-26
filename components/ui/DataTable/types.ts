@@ -122,6 +122,11 @@ export type DataTableProps<Row> = {
   storageKey?: string;
   /** Enables CSV/XLSX export as `${exportFileName}.csv|.xlsx`. */
   exportFileName?: string;
+  /**
+   * Rows that decide column widths; defaults to all rows (every page).
+   * Pass the unfiltered list so search and filters keep the widths.
+   */
+  sizeRows?: Row[];
   /** Controlled sort. */
   sort?: DataTableSort | null;
   onSortChange?: (sort: DataTableSort) => void;

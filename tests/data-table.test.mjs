@@ -19,6 +19,7 @@ import {
   pruneSelection,
   resolveSortValue,
   sortOptionsFor,
+  sizingRowsFor,
   sortRows,
   toggleAllSelection,
   toggleRowSelection,
@@ -317,4 +318,33 @@ test("export cells line up with their headers", () => {
 test("selection keeps only keys that still have a row", () => {
   assert.deepEqual(pruneSelection([1, 4, 9], [1, 2, 3, 4]), [1, 4]);
   assert.deepEqual(pruneSelection([], [1]), []);
+});
+
+test("column widths come from the rows with the longest text", () => {
+  const rows = [
+    { id: 1, name: "Al", city: "Lviv" },
+    { id: 2, name: "Bartholomew", city: "Kyiv" },
+    { id: 3, name: "Cy", city: "Ivano-Frankivsk" },
+    { id: 4, name: "Di", city: "Rivne" },
+  ];
+  const cols = [
+    { key: "name", header: "Name", cell: (r) => r.name },
+    { key: "city", header: "City", cell: () => null, sortValue: (r) => r.city },
+    {
+      key: "note",
+      header: "Note",
+      cell: (r) => "x".repeat(r.id * 50),
+      truncate: true,
+    },
+  ];
+  // Longest name and longest city, in list order; truncated columns ignored.
+  assert.deepEqual(
+    sizingRowsFor(rows, cols, 1).map((r) => r.id),
+    [2, 3],
+  );
+  assert.deepEqual(
+    sizingRowsFor(rows, cols, 3).map((r) => r.id),
+    [1, 2, 3, 4],
+  );
+  assert.deepEqual(sizingRowsFor([], cols), []);
 });

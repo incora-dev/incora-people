@@ -2,6 +2,7 @@
 
 import {
   type CSSProperties,
+  useMemo,
   type KeyboardEvent,
   type MouseEvent,
   useEffect,
@@ -31,6 +32,7 @@ import {
   buildExportRows,
   columnMinWidth,
   gridTemplateFor,
+  sizingRowsFor,
   nextHeaderSort,
 } from "./logic";
 import { Pagination } from "./Pagination";
@@ -91,6 +93,13 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
   const { t, locale } = useI18n();
   const router = useRouter();
   const table = useDataTable({ ...props, pageSize, locale });
+  // Widths come from the widest rows of the whole list (or sizeRows), not
+  // just the visible page, so paging, search and filters don't move them.
+  const sizeSource = props.sizeRows ?? table.sortedRows;
+  const sizers = useMemo(
+    () => sizingRowsFor(sizeSource, table.visibleColumns),
+    [sizeSource, table.visibleColumns],
+  );
   const [confirming, setConfirming] = useState<DataTableRowAction | null>(null);
 
   const actionsFor = rowActions ?? (() => []);
@@ -284,6 +293,27 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
               </span>
             )}
           </div>
+          {sizers.map((row) => (
+            <div
+              key={`sizer-${rowKey(row)}`}
+              className="data-table-row data-table-sizer"
+              aria-hidden
+              inert
+            >
+              {selectable && <span />}
+              {table.visibleColumns.map((column) => (
+                <span
+                  key={column.key}
+                  className={
+                    column.truncate ? "data-table-truncate" : undefined
+                  }
+                >
+                  {column.cell(row)}
+                </span>
+              ))}
+              {rowActions && <span />}
+            </div>
+          ))}
 
           {loading
             ? Array.from({ length: SKELETON_ROWS }, (_, index) => (

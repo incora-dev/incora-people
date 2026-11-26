@@ -216,6 +216,7 @@ export function CompanyAssetsWorkspace({
       <section className="panel directory-panel asset-panel">
         <DataTable
           rows={visible}
+          sizeRows={assets}
           rowKey={(asset) => asset.id}
           columns={columns}
           ariaLabel={t("Assets")}

@@ -26,6 +26,8 @@ import {
   type AuditEventDto,
 } from "@/components/admin/AuditSettings";
 import { useI18n } from "@/components/LocaleProvider";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type { DataTableColumn } from "@/components/ui/DataTable/types";
 import {
   BalanceDialog,
   ExpensePolicySettings,
@@ -185,16 +187,83 @@ export function AdminSettings({
 
   const showSection = (section: string) => activeSection === section;
 
+  // Search narrows the rows; it returns the table to page 1.
+  const [balancePage, setBalancePage] = useState(1);
+  const balanceColumns = useMemo<DataTableColumn<Balance>[]>(
+    () => [
+      {
+        key: "employee",
+        header: "Employee",
+        minWidth: 170,
+        sortValue: (balance) => `${balance.firstName} ${balance.lastName}`,
+        cell: (balance) => (
+          <span className="admin-balance-employee">
+            <strong>
+              {balance.firstName} {balance.lastName}
+            </strong>
+            <small>EMP-{String(balance.employeeId).padStart(3, "0")}</small>
+          </span>
+        ),
+      },
+      {
+        key: "policy",
+        header: "Policy",
+        sortValue: (balance) => t(balance.typeName),
+        cell: (balance) => (
+          <span className="leave-type-cell">
+            <i style={{ background: balance.color }} /> {t(balance.typeName)}
+          </span>
+        ),
+      },
+      {
+        key: "allowance",
+        header: "Allowance",
+        minWidth: 80,
+        sortValue: (balance) => balance.allowance,
+        cell: (balance) => balance.allowance,
+      },
+      {
+        key: "adjustment",
+        header: "Adjustment",
+        minWidth: 85,
+        sortValue: (balance) => balance.adjustment,
+        cell: (balance) =>
+          `${balance.adjustment > 0 ? "+" : ""}${balance.adjustment}`,
+      },
+      {
+        key: "used",
+        header: "Used",
+        minWidth: 65,
+        sortValue: (balance) => balance.used,
+        cell: (balance) => balance.used,
+      },
+      {
+        key: "available",
+        header: "Available",
+        minWidth: 75,
+        sortValue: (balance) =>
+          balance.allowance + balance.adjustment - balance.used,
+        cell: (balance) => (
+          <strong>
+            {balance.allowance + balance.adjustment - balance.used}
+          </strong>
+        ),
+      },
+    ],
+    [t],
+  );
+
   const visibleBalances = useMemo(() => {
     const term = query.toLowerCase().trim();
+    // The table shows the translated policy name; match it and the stored one.
     return balances.filter(
       (item) =>
         !term ||
-        `${item.firstName} ${item.lastName} ${item.typeName}`
+        `${item.firstName} ${item.lastName} ${t(item.typeName)} ${item.typeName}`
           .toLowerCase()
           .includes(term),
     );
-  }, [balances, query]);
+  }, [balances, query, t]);
 
   async function savePolicy(policy: Policy) {
     setMessage("");
@@ -652,54 +721,35 @@ export function AdminSettings({
                   <Search size={14} />
                   <input
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setBalancePage(1);
+                    }}
                     placeholder={t("Search employee or policy")}
                   />
                 </label>
               </div>
-              <div className="admin-balance-table">
-                <div className="admin-balance-head">
-                  <span>{t("Employee")}</span>
-                  <span>{t("Policy")}</span>
-                  <span>{t("Allowance")}</span>
-                  <span>{t("Adjustment")}</span>
-                  <span>{t("Used")}</span>
-                  <span>{t("Available")}</span>
-                  <span />
-                </div>
-                {visibleBalances.map((balance) => (
-                  <div className="admin-balance-row" key={balance.id}>
-                    <span>
-                      <strong>
-                        {balance.firstName} {balance.lastName}
-                      </strong>
-                      <small>
-                        EMP-{String(balance.employeeId).padStart(3, "0")}
-                      </small>
-                    </span>
-                    <span className="leave-type-cell" data-label={t("Policy")}>
-                      <i style={{ background: balance.color }} />{" "}
-                      {t(balance.typeName)}
-                    </span>
-                    <span data-label={t("Allowance")}>{balance.allowance}</span>
-                    <span data-label={t("Adjustment")}>
-                      {balance.adjustment > 0 ? "+" : ""}
-                      {balance.adjustment}
-                    </span>
-                    <span data-label={t("Used")}>{balance.used}</span>
-                    <strong data-label={t("Available")}>
-                      {balance.allowance + balance.adjustment - balance.used}
-                    </strong>
-                    <button
-                      className="row-menu-button"
-                      onClick={() => setEditingBalance(balance)}
-                      aria-label={`${t("Edit")} ${balance.firstName} ${balance.lastName} ${t(balance.typeName)}`}
-                    >
-                      {t("Edit")}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <DataTable
+                rows={visibleBalances}
+                sizeRows={balances}
+                rowKey={(balance) => balance.id}
+                columns={balanceColumns}
+                ariaLabel={t("Employee balances")}
+                page={balancePage}
+                onPageChange={setBalancePage}
+                empty={
+                  query.trim()
+                    ? { icon: Search, text: t("No matching balances.") }
+                    : { icon: CalendarRange, text: t("No balances yet.") }
+                }
+                rowActions={(balance) => [
+                  {
+                    icon: Pencil,
+                    label: `${t("Edit")} ${balance.firstName} ${balance.lastName} ${t(balance.typeName)}`,
+                    onClick: () => setEditingBalance(balance),
+                  },
+                ]}
+              />
             </section>
             <HolidaySettings
               holidays={holidays}

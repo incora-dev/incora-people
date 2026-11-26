@@ -7875,44 +7875,23 @@ h2 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.team-timesheet-table {
-  overflow-x: auto;
+/* The table lines up with the 16px panel heading. */
+.team-timesheet-panel .data-table-panel {
+  --data-table-inset: 16px;
 }
 
-.team-timesheet-head,
-.team-timesheet-row {
-  display: grid;
-  grid-template-columns:
-    minmax(230px, 1.5fr) 70px 130px 90px minmax(130px, 0.8fr)
-    80px 100px;
-  align-items: center;
-  gap: 10px;
-  min-width: 960px;
-  padding: 9px 16px;
-}
-
-.team-timesheet-head {
-  color: var(--muted);
-  background: #fafaf8;
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.team-timesheet-row {
-  min-height: 58px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
-}
-
-.team-timesheet-row .employee-person-cell {
+.team-timesheet-panel .employee-person-cell {
   color: var(--ink);
 }
 
-.team-timesheet-row .button {
-  min-height: 30px;
-  padding: 0 10px;
-  font-size: 10px;
+.team-timesheet-time {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-timesheet-time small {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .timesheet-warning,
@@ -11230,6 +11209,11 @@ body {
 .data-table-row.selected {
   background: #fffdf5;
 }
+/* A row whose change is being saved. */
+.data-table-row-busy {
+  opacity: 0.55;
+  transition: opacity 140ms ease;
+}
 .data-table-row-link {
   cursor: pointer;
 }
@@ -13415,7 +13399,6 @@ button.setting-card-link {
 }
 
 .employee-table,
-.team-timesheet-table,
 .team-calendar,
 .inventory-table-scroll,
 .org-admin-list,

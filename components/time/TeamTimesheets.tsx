@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
   Check,
   CheckCircle2,
   Clock3,
+  CornerUpLeft,
   Download,
   LockKeyhole,
   Search,
@@ -15,7 +16,20 @@ import {
   Users,
 } from "lucide-react";
 import { useI18n } from "@/components/LocaleProvider";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type {
+  DataTableColumn,
+  DataTableRowAction,
+} from "@/components/ui/DataTable/types";
 import type { TeamTimesheetRowDto } from "@/modules/time/types";
+
+type Row = TeamTimesheetRowDto;
+
+function needsAttention(row: Row) {
+  return (
+    row.openEntries > 0 || row.pendingCorrections > 0 || row.longEntries > 0
+  );
+}
 
 export function TeamTimesheets({
   initialRows,
@@ -28,7 +42,11 @@ export function TeamTimesheets({
   const [rows, setRows] = useState(initialRows);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<number | null>(null);
+  // Blocks a second click that lands before the re-render.
+  const busyRef = useRef(false);
   const [message, setMessage] = useState("");
+  // Search narrows the rows; it returns the table to page 1.
+  const [page, setPage] = useState(1);
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     return rows.filter(
@@ -40,38 +58,52 @@ export function TeamTimesheets({
     );
   }, [query, rows]);
   const locked = rows.filter((row) => row.status === "locked").length;
-  const attention = rows.filter(
-    (row) =>
-      row.openEntries > 0 || row.pendingCorrections > 0 || row.longEntries > 0,
-  ).length;
+  const attention = rows.filter(needsAttention).length;
   const tracked = rows.reduce((sum, row) => sum + row.workedMinutes, 0);
 
   async function changeStatus(
     row: TeamTimesheetRowDto,
     nextStatus?: TeamTimesheetRowDto["status"],
   ) {
-    const status = nextStatus ?? (row.status === "locked" ? "open" : "locked");
+    if (busyRef.current) return;
+    // Locked and approved sheets are both closed: the toggle reopens them.
+    const status =
+      nextStatus ??
+      (row.status === "locked" || row.status === "approved"
+        ? "open"
+        : "locked");
     const note =
       status === "revision_required"
         ? (window.prompt(t("Add a comment for the employee")) ?? "")
         : "";
     if (status === "revision_required" && !note.trim()) return;
+    busyRef.current = true;
     setBusyId(row.employeeId);
     setMessage("");
-    const response = await fetch(`/api/time/periods/${row.employeeId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ month, status, note }),
-    });
-    const result = (await response.json()) as {
+    let ok = false;
+    let result: {
       error?: string;
       period?: {
         status: TeamTimesheetRowDto["status"];
         lockedAt: string | null;
         lockedByEmail: string | null;
       };
-    };
-    if (response.ok && result.period) {
+    } = {};
+    try {
+      const response = await fetch(`/api/time/periods/${row.employeeId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ month, status, note }),
+      });
+      ok = response.ok;
+      result = (await response.json().catch(() => ({}))) as typeof result;
+    } catch {
+      ok = false;
+    } finally {
+      busyRef.current = false;
+      setBusyId(null);
+    }
+    if (ok && result.period) {
       setRows((items) =>
         items.map((item) =>
           item.employeeId === row.employeeId
@@ -84,15 +116,144 @@ export function TeamTimesheets({
             : item,
         ),
       );
-      setMessage(
-        status === "locked"
-          ? `${row.firstName}: ${t("timesheet locked.")}`
-          : `${row.firstName}: ${t("timesheet reopened.")}`,
-      );
+      const done = {
+        locked: "timesheet locked.",
+        approved: "timesheet approved.",
+        revision_required: "timesheet returned for revision.",
+        open: "timesheet reopened.",
+      }[status];
+      setMessage(`${row.firstName}: ${t(done)}`);
     } else {
-      setMessage(result.error ?? "Could not update the timesheet period.");
+      setMessage(result.error ?? t("Could not update the timesheet period."));
     }
-    setBusyId(null);
+  }
+
+  const columns = useMemo<DataTableColumn<Row>[]>(
+    () => [
+      {
+        key: "person",
+        header: "Person",
+        minWidth: 230,
+        sortValue: (row) => `${row.firstName} ${row.lastName}`,
+        cell: (row) => (
+          <Link
+            className="employee-person-cell"
+            href={`/employees/${row.employeeId}`}
+          >
+            <span className="avatar small">
+              {row.firstName[0]}
+              {row.lastName[0]}
+            </span>
+            <span>
+              <strong>
+                {row.firstName} {row.lastName}
+              </strong>
+              <small>
+                {row.department}
+                {row.team ? ` · ${row.team}` : ""}
+              </small>
+            </span>
+          </Link>
+        ),
+      },
+      {
+        key: "entries",
+        header: "Entries",
+        minWidth: 70,
+        sortValue: (row) => row.entryCount,
+        cell: (row) => row.entryCount,
+      },
+      {
+        key: "time",
+        header: "Time",
+        sortValue: (row) => row.workedMinutes,
+        cell: (row) => (
+          <span className="team-timesheet-time">
+            <strong>{formatMinutes(row.workedMinutes, t)}</strong>
+            <small>
+              {t("Expected")} {formatMinutes(row.expectedMinutes, t)}
+            </small>
+          </span>
+        ),
+      },
+      {
+        key: "overtime",
+        header: "Overtime",
+        minWidth: 90,
+        // No overtime sorts last.
+        sortValue: (row) => row.overtimeMinutes || null,
+        cell: (row) => (
+          <span
+            className={
+              row.overtimeMinutes ? "timesheet-warning" : "timesheet-ready"
+            }
+          >
+            {row.overtimeMinutes
+              ? `+${formatMinutes(row.overtimeMinutes, t)}`
+              : "—"}
+          </span>
+        ),
+      },
+      {
+        key: "checks",
+        header: "Checks",
+        // Rows that need attention sort first.
+        sortValue: (row) => (needsAttention(row) ? 0 : 1),
+        cell: (row) =>
+          needsAttention(row) ? (
+            <span className="timesheet-warning">
+              <AlertTriangle size={13} />
+              {row.longEntries > 0
+                ? `${row.longEntries} ${t("long shift")}`
+                : row.openEntries > 0
+                  ? `${row.openEntries} ${t("running")}`
+                  : `${row.pendingCorrections} ${t("correction")}`}
+            </span>
+          ) : (
+            <span className="timesheet-ready">
+              <Check size={13} /> {t("Ready")}
+            </span>
+          ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        minWidth: 80,
+        sortValue: (row) => t(row.status),
+        cell: (row) => (
+          <span className={`status-badge ${row.status}`}>{t(row.status)}</span>
+        ),
+      },
+    ],
+    [t],
+  );
+
+  function rowActions(row: Row): DataTableRowAction[] {
+    const busy = busyId !== null;
+    const closed = row.status === "locked" || row.status === "approved";
+    const actions: DataTableRowAction[] = [
+      {
+        icon: closed ? UnlockKeyhole : LockKeyhole,
+        label: closed ? t("Reopen timesheet") : t("Lock timesheet"),
+        disabled: busy,
+        onClick: () => changeStatus(row),
+      },
+    ];
+    if (row.status !== "approved")
+      actions.push({
+        icon: CheckCircle2,
+        label: t("Approve timesheet"),
+        disabled: busy,
+        onClick: () => changeStatus(row, "approved"),
+      });
+    if (row.status !== "revision_required")
+      actions.push({
+        icon: CornerUpLeft,
+        label: t("Return for revision"),
+        disabled: busy,
+        onClick: () => changeStatus(row, "revision_required"),
+      });
+    return actions;
   }
 
   return (
@@ -156,7 +317,7 @@ export function TeamTimesheets({
         />
       </section>
 
-      <section className="panel data-panel">
+      <section className="panel data-panel team-timesheet-panel">
         <div className="data-panel-heading">
           <div>
             <h2>{formatMonth(month, locale)}</h2>
@@ -168,123 +329,28 @@ export function TeamTimesheets({
             <Search size={14} />
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
               placeholder={t("Search person or team")}
             />
           </label>
         </div>
-        <div className="team-timesheet-table">
-          <div className="team-timesheet-head">
-            <span>{t("Person")}</span>
-            <span>{t("Entries")}</span>
-            <span>{t("Time")}</span>
-            <span>{t("Overtime")}</span>
-            <span>{t("Checks")}</span>
-            <span>{t("Status")}</span>
-            <span />
-          </div>
-          {filtered.map((row) => (
-            <div className="team-timesheet-row" key={row.employeeId}>
-              <Link
-                className="employee-person-cell"
-                href={`/employees/${row.employeeId}`}
-              >
-                <span className="avatar small">
-                  {row.firstName[0]}
-                  {row.lastName[0]}
-                </span>
-                <span>
-                  <strong>
-                    {row.firstName} {row.lastName}
-                  </strong>
-                  <small>
-                    {row.department}
-                    {row.team ? ` · ${row.team}` : ""}
-                  </small>
-                </span>
-              </Link>
-              <span>{row.entryCount}</span>
-              <span>
-                <strong>{formatMinutes(row.workedMinutes, t)}</strong>
-                <small>
-                  {t("Expected")} {formatMinutes(row.expectedMinutes, t)}
-                </small>
-              </span>
-              <span
-                className={
-                  row.overtimeMinutes ? "timesheet-warning" : "timesheet-ready"
-                }
-              >
-                {row.overtimeMinutes
-                  ? `+${formatMinutes(row.overtimeMinutes, t)}`
-                  : "—"}
-              </span>
-              <span>
-                {row.openEntries > 0 ||
-                row.pendingCorrections > 0 ||
-                row.longEntries > 0 ? (
-                  <span className="timesheet-warning">
-                    <AlertTriangle size={13} />
-                    {row.longEntries > 0
-                      ? `${row.longEntries} ${t("long shift")}`
-                      : row.openEntries > 0
-                        ? `${row.openEntries} ${t("running")}`
-                        : `${row.pendingCorrections} ${t("correction")}`}
-                  </span>
-                ) : (
-                  <span className="timesheet-ready">
-                    <Check size={13} /> {t("Ready")}
-                  </span>
-                )}
-              </span>
-              <span className={`status-badge ${row.status}`}>
-                {t(row.status)}
-              </span>
-              <button
-                className={
-                  row.status === "locked" || row.status === "approved"
-                    ? "button ghost-button"
-                    : "button primary-button"
-                }
-                onClick={() => changeStatus(row)}
-                disabled={busyId === row.employeeId}
-              >
-                {row.status === "locked" || row.status === "approved" ? (
-                  <UnlockKeyhole size={14} />
-                ) : (
-                  <LockKeyhole size={14} />
-                )}
-                {busyId === row.employeeId
-                  ? t("Saving…")
-                  : row.status === "locked" || row.status === "approved"
-                    ? t("Reopen")
-                    : t("Lock")}
-              </button>
-              {row.status !== "approved" && (
-                <button
-                  className="button ghost-button"
-                  onClick={() => changeStatus(row, "approved")}
-                  disabled={busyId === row.employeeId}
-                >
-                  <CheckCircle2 size={14} />
-                  {t("Approve")}
-                </button>
-              )}
-              {row.status !== "revision_required" && (
-                <button
-                  className="button ghost-button"
-                  onClick={() => changeStatus(row, "revision_required")}
-                  disabled={busyId === row.employeeId}
-                >
-                  {t("Return")}
-                </button>
-              )}
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <p className="compact-empty">{t("No people match this view.")}</p>
-          )}
-        </div>
+        <DataTable
+          rows={filtered}
+          sizeRows={rows}
+          rowKey={(row) => row.employeeId}
+          columns={columns}
+          ariaLabel={t("Team timesheets")}
+          page={page}
+          onPageChange={setPage}
+          empty={{ icon: Users, text: t("No people match this view.") }}
+          rowActions={rowActions}
+          rowClassName={(row) =>
+            row.employeeId === busyId ? "data-table-row-busy" : undefined
+          }
+        />
       </section>
     </>
   );

@@ -31,7 +31,6 @@ import {
   buildExportRows,
   columnMinWidth,
   gridTemplateFor,
-  needsFiller,
   nextHeaderSort,
 } from "./logic";
 import { Pagination } from "./Pagination";
@@ -103,9 +102,6 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
     selectable,
     actionsWidth,
   });
-  const filler = needsFiller(table.visibleColumns) ? (
-    <span className="data-table-filler" aria-hidden />
-  ) : null;
   const stickyColumn = table.visibleColumns[0]?.sticky
     ? table.visibleColumns[0].key
     : null;
@@ -279,7 +275,6 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                 </span>
               );
             })}
-            {filler}
             {rowActions && (
               <span
                 className="data-table-actions data-table-align-end"
@@ -304,7 +299,6 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                       <span className="data-table-skeleton" />
                     </span>
                   ))}
-                  {filler}
                   {rowActions && <span role="cell" />}
                 </div>
               ))
@@ -350,7 +344,6 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                         {column.cell(row)}
                       </span>
                     ))}
-                    {filler}
                     {rowActions && (
                       <span className="data-table-actions" role="cell">
                         {actionsFor(row).map((action, index) => {

@@ -95,7 +95,6 @@ export function CompanyAssetsWorkspace({
         key: "name",
         header: "Name",
         minWidth: 280,
-        grow: 1.4,
         sortValue: (asset) => asset.name,
         exportHeader: ["Name", "Asset tag"],
         exportValue: (asset) => [asset.name, asset.assetTag],
@@ -135,7 +134,6 @@ export function CompanyAssetsWorkspace({
         key: "assignee",
         header: "Assigned to",
         minWidth: 200,
-        grow: 1.6,
         // Nobody assigned sorts last.
         sortValue: assigneeName,
         exportValue: (asset) =>

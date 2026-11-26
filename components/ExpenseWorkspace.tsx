@@ -232,7 +232,6 @@ export function ExpenseWorkspace({
         key: "expense",
         header: "Expense",
         minWidth: 220,
-        grow: 1.6,
         // Long descriptions ellipsize instead of widening the table.
         truncate: true,
         sortValue: (item) => t(item.category),

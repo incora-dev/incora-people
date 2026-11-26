@@ -20,8 +20,8 @@ export type DataTableColumn<Row> = {
   minWidth?: number;
   /**
    * Share of the spare width, like an fr unit. Default 0: the column is as
-   * wide as its content (at least minWidth) and spare width stays empty
-   * before the actions column.
+   * wide as its content (at least minWidth). When no column sets grow, the
+   * first column takes all spare width.
    */
   grow?: number;
   /**

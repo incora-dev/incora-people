@@ -292,11 +292,18 @@ export function columnTrack<Row>(column: DataTableColumn<Row>) {
 }
 
 /**
- * True when no column takes spare width: an empty 1fr track then fills the
- * row before the actions column, so columns keep their content width.
+ * Columns with the default sizing applied: when no column sets grow (or a
+ * raw width), the first column takes all spare width and the others stay
+ * as wide as their content.
  */
-export function needsFiller<Row>(columns: readonly DataTableColumn<Row>[]) {
-  return !columns.some((column) => column.width || (column.grow ?? 0) > 0);
+export function withDefaultGrow<Row>(
+  columns: readonly DataTableColumn<Row>[],
+): DataTableColumn<Row>[] {
+  const anyGrows = columns.some(
+    (column) => column.width || (column.grow ?? 0) > 0,
+  );
+  if (anyGrows || columns.length === 0) return [...columns];
+  return [{ ...columns[0], grow: 1 }, ...columns.slice(1)];
 }
 
 /** Base width the header cell enforces; none for raw or truncated tracks. */
@@ -312,8 +319,7 @@ export function gridTemplateFor<Row>(
 ) {
   return [
     ...(options.selectable ? [SELECT_COLUMN_WIDTH] : []),
-    ...columns.map(columnTrack),
-    ...(needsFiller(columns) ? ["1fr"] : []),
+    ...withDefaultGrow(columns).map(columnTrack),
     ...(options.actionsWidth ? [options.actionsWidth] : []),
   ].join(" ");
 }

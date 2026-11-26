@@ -111,9 +111,10 @@ export function CompanyAssetsWorkspace({
         : assets,
     [assets, scope, currentEmployeeId],
   );
-  const activeCount = scoped.filter(
-    (asset) => asset.status !== "retired",
+  const archivedCount = scoped.filter(
+    (asset) => asset.status === "retired",
   ).length;
+  const activeCount = scoped.length - archivedCount;
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const matching = scoped.filter((asset) => {
@@ -276,7 +277,7 @@ export function CompanyAssetsWorkspace({
               aria-pressed={lifecycle === "archived"}
               onClick={() => resetPage(setLifecycle)("archived")}
             >
-              {t("Archived assets")}
+              {t("Archived assets")} <span>{archivedCount}</span>
             </button>
           </div>
 
@@ -440,7 +441,7 @@ export function CompanyAssetsWorkspace({
               </button>
               {openMenu === "export" && (
                 <section
-                  className="dropdown-panel asset-menu"
+                  className="dropdown-panel asset-menu asset-export-menu"
                   aria-label={t("Export to")}
                 >
                   <button type="button" onClick={exportXlsx}>

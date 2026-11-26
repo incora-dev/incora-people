@@ -1239,6 +1239,7 @@ const uk = {
   "Legacy location-wide draft": "Старий чернетковий перерахунок локації",
   "Selected items": "Вибрані позиції",
   "Select all": "Вибрати всі",
+  "Select row": "Вибрати рядок",
   "Save item selection and refresh expected quantities":
     "Зберегти вибір і оновити очікувані залишки",
   "Choose a count scope, location, and at least one item.":

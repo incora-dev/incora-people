@@ -11227,15 +11227,22 @@ body {
 .data-table-compact {
   --data-table-row-height: 36px;
 }
-.data-table {
+.data-table-scroll {
   overflow-x: auto;
+}
+/* One grid for the whole table; header and rows are subgrids, so columns
+   size to the widest cell in any row and stay aligned. */
+.data-table {
+  display: grid;
+  min-width: var(--data-table-min-width, 760px);
   font-size: 12px;
 }
 .data-table-head,
 .data-table-row {
   display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  min-width: var(--data-table-min-width, 760px);
 }
 .data-table-head > span,
 .data-table-row > span {

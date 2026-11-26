@@ -231,7 +231,10 @@ export function ExpenseWorkspace({
       {
         key: "expense",
         header: "Expense",
-        width: "minmax(220px, 1.6fr)",
+        minWidth: 220,
+        grow: 1.6,
+        // Long descriptions ellipsize instead of widening the table.
+        truncate: true,
         sortValue: (item) => t(item.category),
         cell: (item) => (
           <span className="expense-cell">
@@ -243,14 +246,16 @@ export function ExpenseWorkspace({
       {
         key: "date",
         header: "Date",
-        width: "minmax(105px, 0.8fr)",
+        minWidth: 105,
+        grow: 0.8,
         sortValue: (item) => item.expenseDate,
         cell: (item) => item.expenseDate,
       },
       {
         key: "amount",
         header: "Amount",
-        width: "minmax(110px, 0.8fr)",
+        minWidth: 110,
+        grow: 0.8,
         sortValue: (item) => item.amountCents,
         cell: (item) => (
           <strong>{money(item.amountCents, item.currency)}</strong>
@@ -259,7 +264,8 @@ export function ExpenseWorkspace({
       {
         key: "status",
         header: "Status",
-        width: "minmax(110px, 0.8fr)",
+        minWidth: 110,
+        grow: 0.8,
         sortValue: (item) => t(item.status),
         cell: (item) => (
           <span className={`status-badge ${item.status}`}>

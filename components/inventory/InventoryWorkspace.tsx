@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { DateField } from "@/components/ui/DateField";
 import { DialogBackdrop } from "@/components/ui/DialogBackdrop";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type { DataTableColumn } from "@/components/ui/DataTable/types";
 import { useI18n } from "@/components/LocaleProvider";
 import type {
   InventoryCategoryDto,
@@ -28,6 +30,7 @@ import type {
   InventoryItemDto,
   InventoryHistoryScope,
   InventorySnapshot,
+  InventoryCountLineDto,
 } from "@/modules/inventory/queries";
 import { getDateContext } from "@/modules/shared/date";
 import { addCalendarDays } from "@/modules/people/dates";
@@ -648,6 +651,115 @@ export function InventoryWorkspace({
       )
     : [];
 
+  const countItemColumn: DataTableColumn<InventoryCountLineDto> = {
+    key: "item",
+    header: "Item",
+    minWidth: 180,
+    sortValue: (line) => line.itemName,
+    cell: (line) => (
+      <span className="inventory-count-item">
+        <strong>{line.itemName}</strong>
+        <small>{line.sku}</small>
+      </span>
+    ),
+  };
+  const bookQuantityColumn: DataTableColumn<InventoryCountLineDto> = {
+    key: "book",
+    header: "Book quantity",
+    minWidth: 100,
+    sortValue: (line) => line.expectedQuantity,
+    cell: (line) => `${line.expectedQuantity} ${line.unit}`,
+  };
+  // A blank input means "not counted yet", never 0.
+  const enteredCount = (line: InventoryCountLineDto) =>
+    countInputs[line.itemId] !== undefined && countInputs[line.itemId] !== ""
+      ? Number(countInputs[line.itemId])
+      : null;
+  // Clicking a draft row's text focuses its count field, like the old
+  // row-wide <label>. (Found through the row: sizing copies have no ids.)
+  const focusRowInput = (event: React.MouseEvent<HTMLElement>) =>
+    event.currentTarget
+      .closest('[role="row"]')
+      ?.querySelector<HTMLInputElement>("input.inventory-count-input")
+      ?.focus();
+  const focusable = (
+    column: DataTableColumn<InventoryCountLineDto>,
+  ): DataTableColumn<InventoryCountLineDto> => ({
+    ...column,
+    cell: (line) => (
+      <span className="inventory-count-focus" onClick={focusRowInput}>
+        {column.cell(line)}
+      </span>
+    ),
+  });
+  // The draft is a data-entry table: the counted quantity is typed in place.
+  // Counted and difference don't sort: sorting by values being typed would
+  // move the row away while the user types.
+  const draftCountColumns: DataTableColumn<InventoryCountLineDto>[] = [
+    focusable(countItemColumn),
+    focusable(bookQuantityColumn),
+    {
+      key: "counted",
+      header: "Counted quantity",
+      minWidth: 120,
+      cell: (line) => (
+        <input
+          className="inventory-count-input"
+          type="number"
+          min="0"
+          value={countInputs[line.itemId] ?? ""}
+          onChange={(event) =>
+            setCountInputs((current) => ({
+              ...current,
+              [line.itemId]: event.target.value,
+            }))
+          }
+          aria-label={`${t("Counted quantity")} · ${line.itemName}`}
+        />
+      ),
+    },
+    {
+      key: "difference",
+      header: "Difference",
+      minWidth: 110,
+      cell: (line) => {
+        const counted = enteredCount(line);
+        if (counted === null)
+          return (
+            <span
+              className="inventory-count-muted inventory-count-focus"
+              onClick={focusRowInput}
+            >
+              {t("Not counted")}
+            </span>
+          );
+        const difference = counted - line.expectedQuantity;
+        // A surplus shows its + sign, like the shortage shows its −.
+        return (
+          <span className="inventory-count-focus" onClick={focusRowInput}>
+            {difference > 0 ? "+" : ""}
+            {difference} {line.unit}
+          </span>
+        );
+      },
+    },
+  ];
+  const finalCountColumns: DataTableColumn<InventoryCountLineDto>[] = [
+    countItemColumn,
+    bookQuantityColumn,
+    {
+      key: "counted",
+      header: "Counted",
+      minWidth: 100,
+      sortValue: (line) =>
+        line.effectiveCountedQuantity ?? line.countedQuantity,
+      cell: (line) => (
+        <strong>
+          {line.effectiveCountedQuantity ?? line.countedQuantity} {line.unit}
+        </strong>
+      ),
+    },
+  ];
   return (
     <div className="inventory-workspace">
       <section className="page-heading-row">
@@ -1372,41 +1484,18 @@ export function InventoryWorkspace({
                           )}
                         </div>
                         <form onSubmit={saveCountLines}>
-                          <div className="inventory-count-table">
-                            {selectedCount.lines.map((line) => (
-                              <label
-                                className="inventory-count-line"
-                                key={line.id}
-                              >
-                                <span>
-                                  <strong>{line.itemName}</strong>
-                                  <small>
-                                    {line.sku} · {t("Book quantity")}:{" "}
-                                    {line.expectedQuantity} {line.unit}
-                                  </small>
-                                </span>
-                                <span>{t("Counted quantity")}</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={countInputs[line.itemId] ?? ""}
-                                  onChange={(event) =>
-                                    setCountInputs((current) => ({
-                                      ...current,
-                                      [line.itemId]: event.target.value,
-                                    }))
-                                  }
-                                  aria-label={`${t("Counted quantity")} · ${line.itemName}`}
-                                />
-                                <small className="inventory-count-difference">
-                                  {countInputs[line.itemId] !== undefined &&
-                                  countInputs[line.itemId] !== ""
-                                    ? `${t("Difference")}: ${Number(countInputs[line.itemId]) - line.expectedQuantity} ${line.unit}`
-                                    : t("Not counted")}
-                                </small>
-                              </label>
-                            ))}
-                          </div>
+                          <DataTable
+                            className="inventory-count-table"
+                            rows={selectedCount.lines}
+                            rowKey={(line) => line.id}
+                            columns={draftCountColumns}
+                            ariaLabel={t("Count items")}
+                            pageSize={false}
+                            empty={{
+                              icon: Boxes,
+                              text: t("No items in this count."),
+                            }}
+                          />
                           <div className="inventory-count-actions">
                             <button
                               className="button secondary-button"
@@ -1442,44 +1531,39 @@ export function InventoryWorkspace({
                         </form>
                       </>
                     ) : (
-                      <div className="inventory-count-table">
-                        {selectedCount.lines.map((line) => (
-                          <div className="inventory-count-line" key={line.id}>
-                            <span>
-                              <strong>{line.itemName}</strong>
-                              <small>
-                                {t("Book quantity")}: {line.expectedQuantity}{" "}
-                                {line.unit}
-                              </small>
-                            </span>
-                            <strong>
-                              {t("Counted")}:{" "}
-                              {line.effectiveCountedQuantity ??
-                                line.countedQuantity}{" "}
-                              {line.unit}
-                            </strong>
-                            {isSuperAdmin && (
-                              <button
-                                className="button ghost-button"
-                                onClick={() => {
-                                  setCorrectionTarget({
-                                    type: "count_line",
-                                    id: line.id,
-                                    value:
-                                      line.effectiveCountedQuantity ??
-                                      line.countedQuantity ??
-                                      0,
-                                  });
-                                  openModal("correction");
-                                }}
-                              >
-                                {" "}
-                                {t("Correct history")}
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <DataTable
+                        className="inventory-count-table"
+                        rows={selectedCount.lines}
+                        rowKey={(line) => line.id}
+                        columns={finalCountColumns}
+                        ariaLabel={t("Count items")}
+                        pageSize={false}
+                        empty={{
+                          icon: Boxes,
+                          text: t("No items in this count."),
+                        }}
+                        rowActions={
+                          isSuperAdmin
+                            ? (line) => [
+                                {
+                                  icon: History,
+                                  label: `${t("Correct history")} · ${line.itemName}`,
+                                  onClick: () => {
+                                    setCorrectionTarget({
+                                      type: "count_line",
+                                      id: line.id,
+                                      value:
+                                        line.effectiveCountedQuantity ??
+                                        line.countedQuantity ??
+                                        0,
+                                    });
+                                    openModal("correction");
+                                  },
+                                },
+                              ]
+                            : undefined
+                        }
+                      />
                     )}
                   </div>
                 )}

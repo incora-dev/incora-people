@@ -1254,6 +1254,8 @@ const uk = {
   "Choose a location first": "Спочатку виберіть місце зберігання",
   "Review selected scope": "Перевірте вибрані позиції",
   "Not counted": "Не перераховано",
+  "Count items": "Позиції підрахунку",
+  "No items in this count.": "У цьому підрахунку немає позицій.",
   "Confirm inventory count": "Підтвердити інвентаризацію",
   "Difference unavailable until counted":
     "Різниця з’явиться після введення фактичної кількості",

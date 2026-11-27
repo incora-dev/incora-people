@@ -11196,10 +11196,26 @@ body {
   border: 0;
   visibility: hidden;
 }
-.data-table-sizer > span {
+.data-table-sizer-cells {
+  display: contents;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+/* Same box as real cells, so the measured widths match. */
+.data-table-sizer-cells > span {
+  display: flex;
+  min-width: 0;
   height: 0;
-  padding-block: 0;
+  padding: 0 10px;
   overflow: hidden;
+}
+.data-table-sizer-cells > span:first-child {
+  padding-left: var(--data-table-inset, 15px);
+}
+.data-table-sizer-cells > span:last-child {
+  padding-right: var(--data-table-inset, 15px);
 }
 /* The panel edge or the pagination border closes the table. */
 .data-table-row:last-child {
@@ -12193,30 +12209,40 @@ button.inventory-summary {
   color: var(--muted);
   font-size: 10px;
 }
+/* Count tables sit in the dialog content: flush with its text. */
 .inventory-count-table {
-  display: grid;
-  border-top: 1px solid var(--border);
+  --data-table-inset: 0px;
 }
-.inventory-count-line {
-  display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(100px, 0.5fr) 100px auto;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-}
-.inventory-count-line > span:first-child {
-  display: grid;
+.inventory-count-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
   gap: 3px;
 }
-.inventory-count-line small {
+.inventory-count-item small,
+.inventory-count-muted {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
-.inventory-count-line input {
+/* Clicking a draft row's text puts the cursor in its count field. */
+.inventory-count-focus {
+  cursor: text;
+}
+/* A visible field: the draft is where quantities are typed. */
+.inventory-count-input {
+  width: 100px;
   min-height: 34px;
   padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+.inventory-count-input:focus {
+  border-color: var(--incora-yellow);
+  outline: 2px solid rgb(254 197 6 / 25%);
+  outline-offset: 0;
 }
 .inventory-count-actions {
   justify-content: flex-end;
@@ -12365,17 +12391,6 @@ button.inventory-summary {
   }
   .inventory-location-stock em {
     grid-column: auto;
-  }
-  .inventory-count-line {
-    grid-template-columns: minmax(0, 1fr) 80px;
-    gap: 6px 10px;
-  }
-  .inventory-count-line > span:nth-child(2) {
-    grid-column: 1;
-  }
-  .inventory-count-line > strong,
-  .inventory-count-line > button {
-    grid-column: 1 / -1;
   }
   .inventory-count-actions {
     display: grid;
@@ -14352,10 +14367,6 @@ button.setting-card-link {
   border-radius: 8px;
   background: var(--surface-muted);
   font-size: 11px;
-}
-.inventory-count-difference {
-  grid-column: 2 / -1;
-  color: var(--muted);
 }
 .inventory-finalize-confirm {
   width: min(620px, calc(100vw - 28px));

@@ -47,8 +47,18 @@ export type DataTableColumn<Row> = {
   exportValue?: (row: Row) => string | number | null | undefined | string[];
   /** Translation key(s) of the export header; defaults to header. */
   exportHeader?: string | string[];
-  /** Keeps the column in view while scrolling sideways (first column). */
+  /**
+   * Keeps the column in view while scrolling sideways (first column only).
+   * Do not combine with hideBelow on that column: once it hides, nothing
+   * stays pinned.
+   */
   sticky?: boolean;
+  /**
+   * Hide the column on screens narrower than this many px (CSS media
+   * query, so the right set shows on first paint). For tables that show
+   * fewer columns on laptops and phones instead of scrolling sideways.
+   */
+  hideBelow?: number;
 };
 
 /**

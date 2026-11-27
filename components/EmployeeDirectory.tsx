@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { FormEvent, useMemo, useState } from "react";
 import {
-  ChevronRight,
   Building2,
+  ChevronRight,
   Download,
   Filter,
   FileSpreadsheet,
@@ -17,6 +17,11 @@ import {
   X,
 } from "lucide-react";
 import { useI18n } from "@/components/LocaleProvider";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type {
+  DataTableColumn,
+  DataTableSort,
+} from "@/components/ui/DataTable/types";
 import type { EmployeeDirectoryItem } from "@/modules/people/types";
 import { AdvancedEmployeeFilters } from "@/components/AdvancedEmployeeFilters";
 import { formatEmployeeTenure, tenureYears } from "@/modules/people/tenure";
@@ -73,7 +78,12 @@ export function EmployeeDirectory({
     useState<EmployeeDirectoryLifecycleFilter>("active");
   const [employmentCycleFilter, setEmploymentCycleFilter] =
     useState<EmployeeDirectoryCycleFilter>("all");
-  const [sortOrder, setSortOrder] = useState<EmployeeDirectorySort>("name-asc");
+  // One sort state for the "Sort employees" select and the column headers.
+  const [sort, setSort] = useState<DataTableSort>({
+    key: "person",
+    direction: "asc",
+  });
+  const sortOrder = sortOrderFor(sort);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [advancedIds, setAdvancedIds] = useState<number[] | null>(null);
@@ -186,12 +196,12 @@ export function EmployeeDirectory({
           lifecycle: lifecycleFilter,
           locale,
         }),
-        sortOrder,
+        "name-asc",
         locale,
         today,
         tenureYears,
       ),
-    [lifecycleFilter, locale, matchingQuickFilters, sortOrder, today],
+    [lifecycleFilter, locale, matchingQuickFilters, today],
   );
   const statusCounts = useMemo(
     () => ({
@@ -287,6 +297,182 @@ export function EmployeeDirectory({
     excludeTechnologyGroup,
   ].some((group) => group.visible);
 
+  // Same columns and breakpoints as the old layout: screens up to 1500px
+  // show person, position, department, team and status; phones (up to
+  // 760px) show the person, with position and department underneath, and
+  // the status. hideBelow N hides a column below N px, so 1501 and 761 match
+  // the old max-width 1500px and 760px rules.
+  const laptop = 1501;
+  const phone = 761;
+  // 3. Built once per locale/day: sorting and width sizing depend on it.
+  const employeeColumns = useMemo<DataTableColumn<EmployeeDirectoryItem>[]>(
+    () => [
+      {
+        key: "person",
+        header: "Person",
+        minWidth: 220,
+        // On phones the person text wraps instead of widening the table
+        // (CSS: .employee-directory-table [data-col="person"]).
+        sortValue: (employee) =>
+          `${employee.firstName} ${employee.lastName}`.trim(),
+        cell: (employee) => (
+          <span className="employee-person-cell">
+            <span className="avatar">
+              {employee.photoFileId ? (
+                <Image
+                  src={`/api/files/${employee.photoFileId}`}
+                  alt=""
+                  width={42}
+                  height={42}
+                  unoptimized
+                />
+              ) : (
+                <>
+                  {employee.firstName[0]}
+                  {employee.lastName[0]}
+                </>
+              )}
+            </span>
+            <span>
+              <strong>
+                {employee.firstName} {employee.lastName}
+              </strong>
+              <small>
+                <Mail size={13} /> {employee.email}
+              </small>
+              <small className="employee-mobile-context">
+                {employee.jobTitle} · {employee.department}
+                {employee.team ? ` · ${employee.team}` : ""}
+              </small>
+            </span>
+          </span>
+        ),
+      },
+      {
+        key: "position",
+        header: "Position",
+        minWidth: 150,
+        hideBelow: phone,
+        sortValue: (employee) => employee.jobTitle,
+        cell: (employee) => employee.jobTitle,
+      },
+      {
+        key: "level",
+        header: "Level",
+        minWidth: 90,
+        hideBelow: laptop,
+        sortValue: (employee) => employee.level,
+        cell: (employee) => employee.level || "—",
+      },
+      {
+        key: "department",
+        header: "Department",
+        minWidth: 115,
+        hideBelow: phone,
+        sortValue: (employee) => employee.department,
+        cell: (employee) => (
+          <span className="employee-department-cell">
+            {employee.department}
+          </span>
+        ),
+      },
+      {
+        key: "technologies",
+        header: "Technologies",
+        minWidth: 180,
+        hideBelow: laptop,
+        sortValue: (employee) => employee.technologies,
+        cell: (employee) => (
+          <span className="technology-cell">
+            {(employee.technologies ?? "")
+              .split(",")
+              .map((technology) => technology.trim())
+              .filter(Boolean)
+              .slice(0, 3)
+              .map((technology) => (
+                <em key={technology}>{technology}</em>
+              ))}
+            {!employee.technologies && "—"}
+          </span>
+        ),
+      },
+      {
+        key: "team",
+        header: "Team",
+        minWidth: 105,
+        hideBelow: phone,
+        sortValue: (employee) => employee.team,
+        cell: (employee) => employee.team || "—",
+      },
+      {
+        key: "manager",
+        header: "Manager",
+        minWidth: 135,
+        hideBelow: laptop,
+        sortValue: (employee) => employee.managerName,
+        cell: (employee) => employee.managerName || "—",
+      },
+      {
+        key: "hireDate",
+        header: "Hire date",
+        minWidth: 100,
+        hideBelow: laptop,
+        sortValue: (employee) => employee.startDate,
+        cell: (employee) => formatDate(employee.startDate, locale),
+      },
+      {
+        key: "tenure",
+        header: "Time at company",
+        minWidth: 105,
+        hideBelow: laptop,
+        // Unknown tenure sorts last, as in the "Sort employees" select.
+        sortValue: (employee) => {
+          const years = tenureYears(employee, today);
+          return years >= 0 ? years : null;
+        },
+        cell: (employee) => formatEmployeeTenure(employee, locale, today),
+      },
+      {
+        key: "workMode",
+        header: "Work mode",
+        minWidth: 105,
+        hideBelow: laptop,
+        sortValue: (employee) =>
+          employee.workMode === "remote" ? t("Remote") : t("In office"),
+        cell: (employee) => (
+          <span className="employee-work-mode">
+            {employee.workMode === "remote" ? (
+              <HousePlug size={14} />
+            ) : (
+              <Building2 size={14} />
+            )}{" "}
+            {employee.workMode === "remote" ? t("Remote") : t("In office")}
+          </span>
+        ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        minWidth: 88,
+        sortValue: (employee) => formatStatus(employee.lifecycleStatus, t),
+        cell: (employee) => (
+          <span className={`status-badge ${employee.lifecycleStatus}`}>
+            {formatStatus(employee.lifecycleStatus, t)}
+          </span>
+        ),
+      },
+      {
+        // The arrow from the old layout: the row opens the profile.
+        key: "open",
+        header: "",
+        minWidth: 0,
+        cell: () => (
+          <ChevronRight className="employee-open-cue" size={18} aria-hidden />
+        ),
+      },
+    ],
+    [locale, t, today],
+  );
   return (
     <section className="panel directory-panel">
       <div className="directory-toolbar">
@@ -622,12 +808,22 @@ export function EmployeeDirectory({
           <label className="directory-compact-select directory-sort-select">
             <span className="sr-only">{t("Sort employees")}</span>
             <select
-              value={sortOrder}
+              value={sortOrder ?? "column"}
               onChange={(event) =>
-                setSortOrder(event.target.value as EmployeeDirectorySort)
+                setSort(sortFor(event.target.value as EmployeeDirectorySort))
               }
               aria-label={t("Sort employees")}
             >
+              {/* Shown while a column header other than these sorts. */}
+              {!sortOrder && (
+                <option value="column" disabled>
+                  {t(
+                    employeeColumns.find((column) => column.key === sort.key)
+                      ?.header ?? "Sort employees",
+                  )}{" "}
+                  {sort.direction === "asc" ? "↑" : "↓"}
+                </option>
+              )}
               <option value="name-asc">{t("Name: A–Z")}</option>
               <option value="name-desc">{t("Name: Z–A")}</option>
               <option value="tenure-desc">{t("Longest tenure")}</option>
@@ -674,99 +870,17 @@ export function EmployeeDirectory({
         <span>{t("Updated just now")}</span>
       </div>
 
-      <div
-        className="employee-table"
-        role="table"
-        aria-label={t("Employee directory")}
-      >
-        <div className="employee-table-head" role="row">
-          <span>{t("Person")}</span>
-          <span>{t("Position")}</span>
-          <span>{t("Level")}</span>
-          <span>{t("Department")}</span>
-          <span>{t("Technologies")}</span>
-          <span>{t("Team")}</span>
-          <span>{t("Manager")}</span>
-          <span>{t("Hire date")}</span>
-          <span>{t("Time at company")}</span>
-          <span>{t("Work mode")}</span>
-          <span>{t("Status")}</span>
-          <span />
-        </div>
-        {visible.map((employee) => (
-          <Link
-            className="employee-table-row"
-            href={`/employees/${employee.id}`}
-            key={employee.id}
-            role="row"
-          >
-            <span className="employee-person-cell">
-              <span className="avatar">
-                {employee.photoFileId ? (
-                  <Image
-                    src={`/api/files/${employee.photoFileId}`}
-                    alt=""
-                    width={42}
-                    height={42}
-                    unoptimized
-                  />
-                ) : (
-                  <>
-                    {employee.firstName[0]}
-                    {employee.lastName[0]}
-                  </>
-                )}
-              </span>
-              <span>
-                <strong>
-                  {employee.firstName} {employee.lastName}
-                </strong>
-                <small>
-                  <Mail size={13} /> {employee.email}
-                </small>
-                <small className="employee-mobile-context">
-                  {employee.jobTitle} · {employee.department}
-                  {employee.team ? ` · ${employee.team}` : ""}
-                </small>
-              </span>
-            </span>
-            <span>{employee.jobTitle}</span>
-            <span>{employee.level || "—"}</span>
-            <span>{employee.department}</span>
-            <span className="technology-cell">
-              {(employee.technologies ?? "")
-                .split(",")
-                .map((technology) => technology.trim())
-                .filter(Boolean)
-                .slice(0, 3)
-                .map((technology) => (
-                  <em key={technology}>{technology}</em>
-                ))}
-              {!employee.technologies && "—"}
-            </span>
-            <span>{employee.team || "—"}</span>
-            <span>{employee.managerName || "—"}</span>
-            <span>{formatDate(employee.startDate, locale)}</span>
-            <span>{formatEmployeeTenure(employee, locale, today)}</span>
-            <span>
-              {employee.workMode === "remote" ? (
-                <HousePlug size={14} />
-              ) : (
-                <Building2 size={14} />
-              )}{" "}
-              {employee.workMode === "remote" ? t("Remote") : t("In office")}
-            </span>
-            <span>
-              <span className={`status-badge ${employee.lifecycleStatus}`}>
-                {formatStatus(employee.lifecycleStatus, t)}
-              </span>
-            </span>
-            <span>
-              <ChevronRight size={18} />
-            </span>
-          </Link>
-        ))}
-      </div>
+      <DataTable
+        className="employee-directory-table"
+        rows={visible}
+        rowKey={(employee) => employee.id}
+        columns={employeeColumns}
+        ariaLabel={t("Employee directory")}
+        sort={sort}
+        onSortChange={setSort}
+        pageSize={false}
+        rowHref={(employee) => `/employees/${employee.id}`}
+      />
 
       {visible.length === 0 && (
         <div className="empty-state">
@@ -1246,4 +1360,20 @@ function AddEmployeeDialog({
       </div>
     </DialogBackdrop>
   );
+}
+
+/** The "Sort employees" option for a sort, or null for another column. */
+function sortOrderFor(sort: DataTableSort): EmployeeDirectorySort | null {
+  if (sort.key === "person")
+    return sort.direction === "asc" ? "name-asc" : "name-desc";
+  if (sort.key === "tenure")
+    return sort.direction === "desc" ? "tenure-desc" : "tenure-asc";
+  return null;
+}
+
+function sortFor(order: EmployeeDirectorySort): DataTableSort {
+  if (order === "name-desc") return { key: "person", direction: "desc" };
+  if (order === "tenure-desc") return { key: "tenure", direction: "desc" };
+  if (order === "tenure-asc") return { key: "tenure", direction: "asc" };
+  return { key: "person", direction: "asc" };
 }

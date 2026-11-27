@@ -4,6 +4,7 @@ import {
   actionsColumnWidth,
   buildExportRows,
   clampPage,
+  cssAttributeValue,
   columnMinWidth,
   columnTrack,
   compareSortValues,
@@ -18,6 +19,8 @@ import {
   parseHiddenKeys,
   pruneSelection,
   resolveSortValue,
+  responsiveColumnRules,
+  responsiveColumnsCss,
   sortOptionsFor,
   sizingRowsFor,
   sortRows,
@@ -347,4 +350,55 @@ test("column widths come from the rows with the longest text", () => {
     [1, 2, 3, 4],
   );
   assert.deepEqual(sizingRowsFor([], cols), []);
+});
+
+test("columns with hideBelow hide on narrower screens, widest rule first", () => {
+  const cell = () => "";
+  const cols = [
+    { key: "person", header: "Person", cell },
+    { key: "position", header: "Position", cell, hideBelow: 761 },
+    { key: "level", header: "Level", cell, hideBelow: 1500 },
+    { key: "status", header: "Status", cell, hideBelow: 761 },
+  ];
+  const rules = responsiveColumnRules(cols);
+  assert.deepEqual(
+    rules.map((rule) => [rule.maxWidth, rule.hidden, rule.first, rule.last]),
+    [
+      [1499, ["level"], "person", "status"],
+      [760, ["position", "level", "status"], "person", "person"],
+    ],
+  );
+  // The first remaining column still takes the spare width.
+  assert.equal(
+    rules[0].template,
+    "minmax(max-content, 1fr) max-content max-content",
+  );
+  assert.equal(rules[1].template, "minmax(max-content, 1fr)");
+  // With selection or actions, those cells keep the inset instead.
+  const withActions = responsiveColumnRules(cols, { actionsWidth: "57px" });
+  assert.equal(withActions[1].last, null);
+  assert.equal(withActions[1].template, "minmax(max-content, 1fr) 57px");
+  assert.deepEqual(
+    responsiveColumnRules([{ key: "a", header: "A", cell }]),
+    [],
+  );
+  const css = responsiveColumnsCss("t1", rules);
+  assert.match(
+    css,
+    /^@media \(max-width:1499px\)\{\[data-table-id="t1"\]\{grid-template-columns:/,
+  );
+  assert.match(
+    css,
+    /\[data-table-id="t1"\] \[data-col="level"\]\{display:none!important\}/,
+  );
+  assert.ok(css.indexOf("1499px") < css.indexOf("760px"));
+});
+
+test("column keys are escaped inside the responsive CSS", () => {
+  assert.equal(cssAttributeValue('a"b\\c'), 'a\\"b\\\\c');
+  assert.equal(cssAttributeValue("a\nb]"), "a b]");
+  const css = responsiveColumnsCss("t", [
+    { maxWidth: 99, template: "1fr", hidden: ['x"]'], first: null, last: null },
+  ]);
+  assert.match(css, /\[data-col="x\\"\]"\]\{display:none/);
 });

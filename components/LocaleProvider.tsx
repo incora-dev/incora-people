@@ -1,14 +1,10 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { useMemo } from "react";
 import { type Locale, type TranslationKey, translate } from "@/lib/i18n";
+import { LocaleContext } from "@/components/LocaleContext";
 
-type LocaleContextValue = {
-  locale: Locale;
-  t: (key: TranslationKey | string) => string;
-};
-
-const LocaleContext = createContext<LocaleContextValue | null>(null);
+export { useI18n } from "@/components/LocaleContext";
 
 export function LocaleProvider({
   locale,
@@ -27,10 +23,4 @@ export function LocaleProvider({
   return (
     <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
   );
-}
-
-export function useI18n() {
-  const value = useContext(LocaleContext);
-  if (!value) throw new Error("useI18n must be used within LocaleProvider.");
-  return value;
 }

@@ -264,7 +264,6 @@ const uk = {
   "Delete compensation": "Видалити компенсацію",
   "Delete this compensation record and its attachments?":
     "Видалити цей запис компенсації та його вкладення?",
-  "More compensation actions": "Інші дії з компенсацією",
   "Leave blank to keep current": "Не заповнюйте, щоб не змінювати",
   "Leave blank to keep the current amount.":
     "Залиште поле суми порожнім, щоб не змінювати поточну суму.",

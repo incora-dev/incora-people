@@ -86,6 +86,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
     onRowClick,
     rowClassName,
     rowActions,
+    rowDetails,
     empty,
     loading = false,
     toolbar,
@@ -362,9 +363,16 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                 const key = rowKey(row);
                 const selected = selectable && table.isSelected(key);
                 const extra = rowClassName?.(row);
+                // Row details are not a cell (the row would have one cell
+                // more than the header): they are hidden from the table
+                // structure and announced as the row's description.
+                const details = rowDetails?.(row);
+                const hasDetails = details != null && details !== false;
+                const detailsId = `${tableId}-details-${key}`;
                 return (
                   <div
                     key={key}
+                    aria-describedby={hasDetails ? detailsId : undefined}
                     className={`data-table-row${clickable ? " data-table-row-link" : ""}${selected ? " selected" : ""}${extra ? ` ${extra}` : ""}`}
                     role="row"
                     tabIndex={clickable ? 0 : undefined}
@@ -442,6 +450,15 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                         })}
                       </span>
                     )}
+                    {hasDetails && (
+                      <span
+                        className="data-table-row-details"
+                        id={detailsId}
+                        aria-hidden
+                      >
+                        {details}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -502,7 +519,9 @@ function ConfirmActionDialog({
         <span>
           <AlertTriangle size={21} />
         </span>
-        <h3 id="data-table-confirm-title">{action.label}?</h3>
+        <h3 id="data-table-confirm-title">
+          {action.confirmTitle ?? `${action.label}?`}
+        </h3>
         <p>{action.confirmText ?? t("This action cannot be undone.")}</p>
         <div>
           <button

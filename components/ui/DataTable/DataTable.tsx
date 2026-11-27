@@ -300,18 +300,26 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
               aria-hidden
               inert
             >
-              {selectable && <span />}
-              {table.visibleColumns.map((column) => (
-                <span
-                  key={column.key}
-                  className={
-                    column.truncate ? "data-table-truncate" : undefined
-                  }
-                >
-                  {column.cell(row)}
-                </span>
-              ))}
-              {rowActions && <span />}
+              {/* Defensive: a disabled fieldset disables every control a
+                  cell renders, now or after a later re-render, so copies of
+                  inputs can never be submitted or focused. (Cells that read
+                  their values from state, like the inventory count, would
+                  not be affected anyway.) display: contents keeps the cells
+                  in the row's grid. */}
+              <fieldset className="data-table-sizer-cells" disabled>
+                {selectable && <span />}
+                {table.visibleColumns.map((column) => (
+                  <span
+                    key={column.key}
+                    className={
+                      column.truncate ? "data-table-truncate" : undefined
+                    }
+                  >
+                    {column.cell(row)}
+                  </span>
+                ))}
+                {rowActions && <span />}
+              </fieldset>
             </div>
           ))}
 

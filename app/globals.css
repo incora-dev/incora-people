@@ -14674,77 +14674,34 @@ button.setting-card-link {
   font-size: 12px;
 }
 
-.one-on-one-directory-table {
-  width: 100%;
-  overflow-x: auto;
-  border-top: 1px solid var(--border);
-  scrollbar-width: thin;
+/* On wider screens the table runs edge to edge in the panel, like every
+   other table, and its text lines up with the panel's 20px content. */
+@media (min-width: 761px) {
+  .one-on-one-employees-panel .one-on-one-table {
+    --data-table-inset: 20px;
+    margin-inline: -20px;
+  }
+  /* Rows had 9px vertical padding around their two-line cells. */
+  .one-on-one-table .data-table-row:not(.data-table-sizer) > span {
+    padding-block: 9px;
+  }
 }
-
-.one-on-one-directory-head,
-.one-on-one-directory-row {
-  display: grid;
-  grid-template-columns:
-    minmax(150px, 1.25fr) minmax(130px, 1fr) minmax(140px, 1.05fr)
-    minmax(130px, 0.95fr) minmax(105px, 0.75fr) minmax(190px, 1.25fr);
-  align-items: center;
-  gap: 12px;
-  min-width: 970px;
-}
-
-.one-on-one-directory-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 9px 10px;
-  background: var(--surface-muted);
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.one-on-one-directory-row {
-  padding: 9px 10px;
-  border-bottom: 1px solid var(--border);
-  color: var(--ink);
-  font-size: 12px;
-}
-
-.one-on-one-directory-row:hover {
-  background: var(--surface-muted);
-}
-.one-on-one-directory-row > span {
+.one-on-one-cell {
   display: grid;
   min-width: 0;
   gap: 2px;
 }
-.one-on-one-directory-row strong {
+.one-on-one-cell strong {
   overflow-wrap: anywhere;
-  font-size: 12px;
   font-weight: 600;
 }
-.one-on-one-directory-row > span > small:not(.one-on-one-mobile-label) {
+.one-on-one-cell > small:not(.one-on-one-mobile-label) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.35;
 }
 .one-on-one-mobile-label {
   display: none;
-}
-.one-on-one-directory-actions {
-  display: flex !important;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px !important;
-}
-.one-on-one-directory-actions .button {
-  min-height: 30px;
-  padding: 5px 8px;
-  font-size: 11px;
-  white-space: nowrap;
-}
-.one-on-one-directory-table > .compact-empty {
-  margin: 10px 0;
 }
 
 @media (max-width: 760px) {
@@ -14773,37 +14730,67 @@ button.setting-card-link {
     grid-column: 1 / -1;
     justify-self: end;
   }
-  .one-on-one-directory-table {
+  /* Phones keep the card layout: every row is a two-column card with
+     captions, and the table header and sizing rows are hidden. */
+  .one-on-one-table .data-table-scroll {
     overflow: visible;
-    border-top: 0;
   }
-  .one-on-one-directory-head {
+  .one-on-one-table .data-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .one-on-one-table .data-table-head,
+  .one-on-one-table .data-table-row.data-table-sizer {
     display: none;
   }
-  .one-on-one-directory-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    min-width: 0;
+  .one-on-one-table .data-table-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
     gap: 9px 12px;
+    min-height: 0;
     margin: 0 0 8px;
     padding: 11px;
     border: 1px solid var(--border);
     border-radius: 9px;
   }
-  .one-on-one-directory-row > span:first-child,
-  .one-on-one-directory-row > span:last-child {
-    grid-column: 1 / -1;
+  .one-on-one-table .data-table-row > span {
+    position: static;
+    padding: 0;
   }
-  .one-on-one-directory-row > span:first-child {
-    padding-bottom: 7px;
+  /* First line of the card: employee, then the action buttons on the
+     right; the other fields fill two columns underneath. */
+  .one-on-one-table .data-table-row > span:first-child {
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
+  /* Stretches to the employee cell's height so both dividers line up;
+     the buttons stay at the top. */
+  .one-on-one-table .data-table-row > .data-table-actions {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: stretch;
+    align-items: flex-start;
+    justify-content: flex-end;
+    box-shadow: none;
+  }
+  .one-on-one-table .data-table-row > span:nth-child(2),
+  .one-on-one-table .data-table-row > span:nth-child(4) {
+    grid-column: 1;
+  }
+  .one-on-one-table .data-table-row > span:nth-child(3),
+  .one-on-one-table .data-table-row > span:nth-child(5) {
+    grid-column: 2 / -1;
+  }
+  .one-on-one-table .data-table-row > span:first-child,
+  .one-on-one-table .data-table-row > .data-table-actions {
+    padding: 0 0 7px;
     border-bottom: 1px solid var(--border);
   }
-  .one-on-one-directory-row > span > .one-on-one-mobile-label {
+  .one-on-one-table .one-on-one-mobile-label {
     display: block;
     color: var(--muted);
     font-size: 10px;
-  }
-  .one-on-one-directory-actions {
-    flex-direction: row;
   }
 }
 
@@ -14868,18 +14855,17 @@ button.setting-card-link {
     width: 100%;
     min-width: 0;
   }
-  .one-on-one-directory-row {
-    grid-template-columns: minmax(0, 1fr);
+  .one-on-one-table .data-table-row {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
-  .one-on-one-directory-row > span:first-child,
-  .one-on-one-directory-row > span:last-child {
+  .one-on-one-table .data-table-row > span:first-child {
     grid-column: 1;
   }
-  .one-on-one-directory-actions {
-    align-items: stretch;
+  .one-on-one-table .data-table-row > .data-table-actions {
+    grid-column: 2;
   }
-  .one-on-one-directory-actions .button {
-    flex: 1 1 auto;
+  .one-on-one-table .data-table-row > span:nth-child(n + 2):nth-child(-n + 5) {
+    grid-column: 1 / -1;
   }
 }
 

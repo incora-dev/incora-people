@@ -75,20 +75,28 @@ export function EmployeeCompensation({
       form.delete("removeAttachmentIds");
       form.set("removeAttachmentIds", JSON.stringify(removeIds));
     }
-    const response = await fetch(
-      editingItem
-        ? `/api/employees/${employeeId}/compensations/${editingItem.id}`
-        : `/api/employees/${employeeId}/compensations`,
-      {
-        method: editingItem ? "PATCH" : "POST",
-        body: form,
-      },
-    );
-    const result = (await response.json()) as {
+    let response: Response;
+    let result: {
       items?: CompensationListItem[];
       error?: string;
       attachmentCleanupPending?: boolean;
-    };
+    } = {};
+    try {
+      response = await fetch(
+        editingItem
+          ? `/api/employees/${employeeId}/compensations/${editingItem.id}`
+          : `/api/employees/${employeeId}/compensations`,
+        {
+          method: editingItem ? "PATCH" : "POST",
+          body: form,
+        },
+      );
+      // An empty or non-JSON reply (e.g. a crash) becomes a generic error.
+      result = (await response.json().catch(() => ({}))) as typeof result;
+    } catch {
+      setError(t("Could not save compensation."));
+      return;
+    }
     if (!response.ok || !result.items) {
       setError(t(result.error ?? "Could not save compensation."));
       return;

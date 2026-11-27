@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -32,6 +33,8 @@ import {
   buildExportRows,
   columnMinWidth,
   gridTemplateFor,
+  responsiveColumnRules,
+  responsiveColumnsCss,
   sizingRowsFor,
   nextHeaderSort,
 } from "./logic";
@@ -120,6 +123,12 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
   // Rows are subgrids of the table, so one template sizes every row and a
   // column can grow to fit its widest cell.
   const tableStyle = { gridTemplateColumns: gridTemplate };
+  // Columns with hideBelow: media queries keep the grid and cells in step.
+  const tableId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const responsiveCss = responsiveColumnsCss(
+    tableId,
+    responsiveColumnRules(table.visibleColumns, { selectable, actionsWidth }),
+  );
   const clickable = Boolean(rowHref || onRowClick);
 
   // A shadow on the pinned columns while content scrolls beneath them.
@@ -147,14 +156,19 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
     // width does not: recalculate whenever the grid template changes.
   }, [gridTemplate]);
 
-  function activateRow(row: Row) {
-    if (onRowClick) onRowClick(row);
+  function activateRow(row: Row, newTab = false) {
     const href = rowHref?.(row);
+    // Cmd/Ctrl or middle click opens a linked row in a new tab, like a link.
+    if (href && newTab) {
+      window.open(href, "_blank", "noopener");
+      return;
+    }
+    if (onRowClick) onRowClick(row);
     if (href) router.push(href);
   }
   function rowClick(event: MouseEvent<HTMLDivElement>, row: Row) {
     if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
-    activateRow(row);
+    activateRow(row, event.metaKey || event.ctrlKey || event.button === 1);
   }
   function rowKeyDown(event: KeyboardEvent<HTMLDivElement>, row: Row) {
     if (event.target !== event.currentTarget || event.key !== "Enter") return;
@@ -213,12 +227,14 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
       {typeof toolbar === "function"
         ? toolbar({ viewSettings, exportMenu })
         : toolbar}
+      {responsiveCss && <style>{responsiveCss}</style>}
       <div
         ref={scrollRef}
         className={`data-table-scroll${overflow.start ? " data-table-overflow-start" : ""}${overflow.end ? " data-table-overflow-end" : ""}`}
       >
         <div
           className="data-table"
+          data-table-id={tableId}
           role="table"
           aria-label={ariaLabel}
           aria-rowcount={table.totalRows + 1}
@@ -248,6 +264,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
               return (
                 <span
                   key={column.key}
+                  data-col={column.key}
                   role="columnheader"
                   className={`${alignClass(column.align)}${stickyClass(column.key)}${column.truncate ? " data-table-truncate" : ""}`.trim()}
                   style={{ minWidth: columnMinWidth(column) }}
@@ -311,6 +328,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                 {table.visibleColumns.map((column) => (
                   <span
                     key={column.key}
+                    data-col={column.key}
                     className={
                       column.truncate ? "data-table-truncate" : undefined
                     }
@@ -333,7 +351,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                 >
                   {selectable && <span role="cell" />}
                   {table.visibleColumns.map((column) => (
-                    <span key={column.key} role="cell">
+                    <span key={column.key} data-col={column.key} role="cell">
                       <span className="data-table-skeleton" />
                     </span>
                   ))}
@@ -352,6 +370,13 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                     tabIndex={clickable ? 0 : undefined}
                     onClick={
                       clickable ? (event) => rowClick(event, row) : undefined
+                    }
+                    onAuxClick={
+                      clickable && rowHref
+                        ? (event) => {
+                            if (event.button === 1) rowClick(event, row);
+                          }
+                        : undefined
                     }
                     onKeyDown={
                       clickable ? (event) => rowKeyDown(event, row) : undefined
@@ -373,6 +398,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                     {table.visibleColumns.map((column) => (
                       <span
                         key={column.key}
+                        data-col={column.key}
                         role="cell"
                         className={
                           `${alignClass(column.align)}${stickyClass(column.key)}${column.truncate ? " data-table-truncate" : ""}`.trim() ||

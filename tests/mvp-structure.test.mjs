@@ -1697,7 +1697,13 @@ test("keeps the next UI iteration localized, touch-friendly and semantically sel
     /PDF, DOCX, JPEG, PNG or WebP · maximum 10 MB\. Stored privately\./,
   );
   assert.match(directory, /employee-mobile-context/);
-  assert.match(styles, /@media \(max-width: 1500px\) and \(min-width: 761px\)/);
+  // Screens up to 1500px show fewer directory columns; phones show the
+  // person and status. DataTable applies this through hideBelow media
+  // queries (hideBelow N hides below N px, so 1501 means max-width 1500px).
+  assert.match(directory, /const laptop = 1501;/);
+  assert.match(directory, /const phone = 761;/);
+  assert.match(directory, /hideBelow: laptop/);
+  assert.match(directory, /hideBelow: phone/);
   assert.match(directory, /formatCount/);
   assert.match(filters, /aria-pressed=\{mode === "all"\}/);
   assert.match(tasks, /aria-pressed=\{filter === value\}/);

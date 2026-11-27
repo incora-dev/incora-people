@@ -3714,49 +3714,41 @@ h2 {
   }
 }
 
-.employee-table-head,
-.employee-table-row {
-  display: grid;
-  grid-template-columns:
-    minmax(220px, 1.5fr) minmax(150px, 1fr) 90px minmax(115px, 0.8fr) minmax(
-      180px,
-      1.1fr
-    )
-    minmax(105px, 0.7fr) minmax(135px, 0.9fr) 100px 105px 105px 88px 24px;
+/* Directory rows keep their taller look (avatar + two lines). */
+.employee-directory-table {
+  --data-table-row-height: 76px;
+}
+
+/* Breathing room when the person cell wraps (phones). */
+.employee-directory-table .data-table-row:not(.data-table-sizer) > span {
+  padding-block: 10px;
+}
+
+.employee-department-cell {
+  color: #66686d;
+}
+
+/* The row opens the profile: an arrow at its end, darker on hover. */
+.employee-open-cue {
+  color: #b5b6b9;
+  transition: color 140ms ease;
+}
+
+.employee-directory-table .data-table-row:hover .employee-open-cue {
+  color: var(--ink);
+}
+
+/* Phones show person and status without a header row, as before. */
+@media (max-width: 760px) {
+  .employee-directory-table .data-table-head {
+    display: none;
+  }
+}
+
+.employee-work-mode {
+  display: inline-flex;
   align-items: center;
-  gap: 18px;
-  min-width: 1590px;
-  padding: 0 20px;
-}
-
-.employee-table {
-  overflow-x: auto;
-}
-
-.employee-table-head {
-  min-height: 42px;
-  border-bottom: 1px solid var(--line);
-  color: #96979a;
-  font-family: var(--font-inter), sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.employee-table-row {
-  min-height: 76px;
-  border-bottom: 1px solid #f0f0ed;
-  font-size: 12px;
-  transition: background 140ms ease;
-}
-
-.employee-table-row:last-child {
-  border-bottom: 0;
-}
-
-.employee-table-row:hover {
-  background: #fffdf5;
+  gap: 6px;
 }
 .technology-cell {
   display: flex;
@@ -4082,13 +4074,6 @@ h2 {
   .org-viewport {
     min-height: 460px;
   }
-}
-
-.employee-table-row > span:nth-child(4) {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #66686d;
 }
 
 .employee-person-cell {
@@ -5676,29 +5661,6 @@ body:has(#history:target) .profile-tabs a[href="#history"]::after {
     flex: 0 0 auto;
     justify-content: center;
     margin-left: 0;
-  }
-
-  .employee-table-head {
-    display: none;
-  }
-
-  .employee-table-row {
-    grid-template-columns: 1fr auto;
-    gap: 10px;
-    min-width: 0;
-    padding: 14px 16px;
-  }
-
-  .employee-table-row > span:nth-child(2),
-  .employee-table-row > span:nth-child(3),
-  .employee-table-row > span:nth-child(4),
-  .employee-table-row > span:nth-child(5),
-  .employee-table-row > span:nth-child(6),
-  .employee-table-row > span:nth-child(7),
-  .employee-table-row > span:nth-child(8),
-  .employee-table-row > span:nth-child(9),
-  .employee-table-row > span:nth-child(10) {
-    display: none;
   }
 
   .employee-person-cell {
@@ -9463,7 +9425,6 @@ body {
 
 .eyebrow,
 .directory-meta,
-.employee-table-head,
 .team-calendar-head,
 .settings-section .access-matrix-head {
   color: #66686d;
@@ -11123,7 +11084,8 @@ body {
 }
 
 /* DataTable (components/ui/DataTable): CSS grid with table roles. Narrow
-   screens scroll the table sideways; columns never hide or turn into cards. */
+   screens scroll the table sideways and never turn rows into cards; a
+   column hides only where the page sets its hideBelow. */
 /* --data-table-inset: side padding of the first and last cells, so a page
    can line the table up with its panel heading. */
 .data-table-panel {
@@ -13413,7 +13375,6 @@ button.setting-card-link {
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
 }
 
-.employee-table,
 .team-calendar,
 .inventory-table-scroll,
 .org-admin-list,
@@ -14952,7 +14913,6 @@ button.setting-card-link {
    styles cannot reintroduce horizontal overflow or undersized controls. */
 .eyebrow,
 .directory-meta,
-.employee-table-head,
 .team-calendar-head,
 .settings-section .access-matrix-head {
   color: #60636a;
@@ -14960,7 +14920,6 @@ button.setting-card-link {
 
 .eyebrow,
 .directory-meta,
-.employee-table-head,
 .team-calendar-head,
 .settings-section .access-matrix-head {
   font-size: 11px;
@@ -15209,31 +15168,6 @@ button.setting-card-link {
 
 .employee-person-cell .employee-mobile-context {
   display: none;
-}
-
-@media (max-width: 1500px) and (min-width: 761px) {
-  .employee-table-head,
-  .employee-table-row {
-    grid-template-columns:
-      minmax(200px, 1.6fr) minmax(145px, 1fr) minmax(125px, 0.9fr)
-      minmax(125px, 0.9fr) 100px 28px;
-    min-width: 0;
-  }
-
-  .employee-table-head > span:nth-child(3),
-  .employee-table-head > span:nth-child(5),
-  .employee-table-head > span:nth-child(7),
-  .employee-table-head > span:nth-child(8),
-  .employee-table-head > span:nth-child(9),
-  .employee-table-head > span:nth-child(10),
-  .employee-table-row > span:nth-child(3),
-  .employee-table-row > span:nth-child(5),
-  .employee-table-row > span:nth-child(7),
-  .employee-table-row > span:nth-child(8),
-  .employee-table-row > span:nth-child(9),
-  .employee-table-row > span:nth-child(10) {
-    display: none;
-  }
 }
 
 @media (max-width: 760px) {

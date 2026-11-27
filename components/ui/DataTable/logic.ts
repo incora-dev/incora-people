@@ -382,3 +382,84 @@ export function sizingRowsFor<Row>(
   }
   return rows.filter((row) => picked.has(row));
 }
+
+export type ResponsiveColumnsRule = {
+  /** Applies on screens up to this width (max-width, px). */
+  maxWidth: number;
+  /** Grid template of the columns still shown. */
+  template: string;
+  /** Keys of the columns hidden at this width. */
+  hidden: string[];
+  /** First and last shown column, which take the table inset padding. */
+  first: string | null;
+  last: string | null;
+};
+
+/**
+ * Media-query rules for columns with hideBelow, widest first, so narrower
+ * rules come later and win. A column with hideBelow N is hidden below N px.
+ */
+export function responsiveColumnRules<Row>(
+  columns: readonly DataTableColumn<Row>[],
+  options: { selectable?: boolean; actionsWidth?: string | null } = {},
+): ResponsiveColumnsRule[] {
+  const breakpoints = [
+    ...new Set(
+      columns.map((column) => column.hideBelow).filter((value) => !!value),
+    ),
+  ].sort((a, b) => (b as number) - (a as number)) as number[];
+  return breakpoints.map((breakpoint) => {
+    const shown = columns.filter(
+      (column) => !column.hideBelow || column.hideBelow < breakpoint,
+    );
+    return {
+      maxWidth: breakpoint - 1,
+      template: gridTemplateFor(shown, options),
+      hidden: columns
+        .filter((column) => !shown.includes(column))
+        .map((column) => column.key),
+      first: options.selectable ? null : (shown[0]?.key ?? null),
+      last: options.actionsWidth ? null : (shown.at(-1)?.key ?? null),
+    };
+  });
+}
+
+/**
+ * A value safe inside a double-quoted CSS attribute selector: quotes and
+ * backslashes are escaped, line breaks (not allowed there) become spaces.
+ */
+export function cssAttributeValue(value: string) {
+  return value.replace(/["\\\n\r\f]/g, (char) =>
+    char === '"' || char === "\\" ? `\\${char}` : " ",
+  );
+}
+
+/** CSS for responsiveColumnRules, scoped to one table. */
+export function responsiveColumnsCss(
+  tableId: string,
+  rules: readonly ResponsiveColumnsRule[],
+) {
+  const scope = `[data-table-id="${cssAttributeValue(tableId)}"]`;
+  const col = (key: string) => `[data-col="${cssAttributeValue(key)}"]`;
+  return rules
+    .map((rule) => {
+      const parts = [
+        `${scope}{grid-template-columns:${rule.template}!important}`,
+        ...rule.hidden.map(
+          (key) => `${scope} ${col(key)}{display:none!important}`,
+        ),
+        ...(rule.first
+          ? [
+              `${scope} ${col(rule.first)}{padding-left:var(--data-table-inset,15px)}`,
+            ]
+          : []),
+        ...(rule.last
+          ? [
+              `${scope} ${col(rule.last)}{padding-right:var(--data-table-inset,15px)}`,
+            ]
+          : []),
+      ];
+      return `@media (max-width:${rule.maxWidth}px){${parts.join("")}}`;
+    })
+    .join("");
+}

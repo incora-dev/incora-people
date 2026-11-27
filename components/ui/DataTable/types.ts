@@ -83,6 +83,8 @@ export type DataTableRowAction = {
   danger?: boolean;
   /** Translated confirmation text for a danger action. */
   confirmText?: string;
+  /** Translated title of the confirmation; defaults to "<label>?". */
+  confirmTitle?: string;
   /** Button is disabled, e.g. while its request is running. */
   disabled?: boolean;
 };
@@ -121,6 +123,11 @@ export type DataTableProps<Row> = {
   rowClassName?: (row: Row) => string | undefined;
   /** Icon buttons in a fixed column on the right, kept in view. */
   rowActions?: (row: Row) => DataTableRowAction[];
+  /**
+   * Extra content on its own line under the row, across all columns (e.g.
+   * a comment). It never widens the columns. Return null for none.
+   */
+  rowDetails?: (row: Row) => ReactNode;
   empty?: { icon?: ComponentType<{ size?: number }>; text: string };
   loading?: boolean;
   /** Toolbar above the table; a function receives the built-in menus. */

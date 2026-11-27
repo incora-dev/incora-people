@@ -651,13 +651,21 @@ test("includes durable extended employee profile records", async () => {
   );
   assert.match(fileStorage, /storedFileDeletionAuditDetails/);
   assert.match(fileAudit, /Compensation attachment deleted/);
-  assert.match(compensation, /opensUp/);
+  // The table is a DataTable: edit and a confirmed delete are row actions,
+  // the comment is a line under the row, and the amount column cannot sort
+  // (amounts are not in the list; they arrive only through reveal).
+  assert.match(compensation, /<DataTable/);
+  assert.match(compensation, /icon: Trash2,[\s\S]*?danger: true/);
   assert.match(
-    css,
-    /\.compensation-table\.editable\s*\{[^}]*overflow:\s*visible/s,
+    compensation,
+    /confirmText: t\(\s*"Delete this compensation record and its attachments\?"/,
   );
-  assert.match(css, /\.compensation-row:has\(\.compensation-row-menu-list\)/);
-  assert.match(css, /\.compensation-row-menu-list\.opens-up/);
+  assert.match(compensation, /rowDetails=\{\(item\) =>\s*item\.comment/);
+  assert.match(
+    compensation,
+    /key: "amount",\s*header: "Amount",\s*minWidth: \d+,\s*cell:/,
+  );
+  assert.match(css, /\.compensation-table \.data-table-row\s*\{/);
   assert.match(route, /employee\.profile_record_created/);
   assert.match(route, /employee\.profile_record_updated/);
   assert.match(route, /employee\.profile_record_deleted/);

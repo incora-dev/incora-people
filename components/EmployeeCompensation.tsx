@@ -1,15 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import {
-  Eye,
-  EyeOff,
-  MoreHorizontal,
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-} from "lucide-react";
+import { useCallback, useMemo, useState, type FormEvent } from "react";
+import { Eye, EyeOff, Plus, Pencil, Trash2, X } from "lucide-react";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type { DataTableColumn } from "@/components/ui/DataTable/types";
 import { DialogBackdrop } from "@/components/ui/DialogBackdrop";
 import { DateField } from "@/components/ui/DateField";
 import { ProfileCardHeading } from "@/components/ProfileCardHeading";
@@ -37,31 +31,40 @@ export function EmployeeCompensation({
   const [editingItem, setEditingItem] = useState<CompensationListItem | null>(
     null,
   );
-  const [deletingItem, setDeletingItem] = useState<CompensationListItem | null>(
-    null,
-  );
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  async function reveal(id: number) {
-    if (revealed[id]) {
-      setRevealed((current) => {
-        const next = { ...current };
-        delete next[id];
-        return next;
-      });
-      return;
-    }
-    const response = await fetch(
-      `/api/employees/${employeeId}/compensations/${id}/reveal`,
-      { method: "POST" },
-    );
-    const result = (await response.json()) as RevealedAmount & {
-      error?: string;
-    };
-    if (response.ok) setRevealed((current) => ({ ...current, [id]: result }));
-    else setError(t(result.error ?? "Could not reveal compensation."));
-  }
+  // Calls this employee's reveal endpoint, so it is rebuilt with employeeId.
+  const reveal = useCallback(
+    async (id: number) => {
+      if (revealed[id]) {
+        setRevealed((current) => {
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+        return;
+      }
+      try {
+        const response = await fetch(
+          `/api/employees/${employeeId}/compensations/${id}/reveal`,
+          { method: "POST" },
+        );
+        const result = (await response.json().catch(() => ({}))) as Partial<
+          RevealedAmount & { error: string }
+        >;
+        if (response.ok && result.currency)
+          setRevealed((current) => ({
+            ...current,
+            [id]: result as RevealedAmount,
+          }));
+        else setError(t(result.error ?? "Could not reveal compensation."));
+      } catch {
+        setError(t("Could not reveal compensation."));
+      }
+    },
+    [employeeId, revealed, t],
+  );
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -111,22 +114,29 @@ export function EmployeeCompensation({
     setDialogOpen(false);
   }
 
-  async function confirmDelete() {
-    if (!deletingItem) return;
+  // Runs after DataTable's danger confirmation.
+  async function deleteItem(deletingItem: CompensationListItem) {
     setError("");
     setNotice("");
-    const response = await fetch(
-      `/api/employees/${employeeId}/compensations/${deletingItem.id}`,
-      { method: "DELETE" },
-    );
-    const result = (await response.json()) as {
+    let response: Response;
+    let result: {
       items?: CompensationListItem[];
       error?: string;
       attachmentCleanupPending?: boolean;
-    };
+    } = {};
+    try {
+      response = await fetch(
+        `/api/employees/${employeeId}/compensations/${deletingItem.id}`,
+        { method: "DELETE" },
+      );
+      result = (await response.json().catch(() => ({}))) as typeof result;
+    } catch {
+      // Network failure: show the error instead of failing silently.
+      setError(t("Could not delete compensation."));
+      return;
+    }
     if (!response.ok || !result.items) {
       setError(t(result.error ?? "Could not delete compensation."));
-      setDeletingItem(null);
       return;
     }
     setItems(result.items);
@@ -139,10 +149,128 @@ export function EmployeeCompensation({
       delete next[deletingItem.id];
       return next;
     });
-    setDeletingItem(null);
   }
 
   const visibleItems = items.filter((item) => item.kind === kind);
+  // Amounts are not part of the list: they arrive only through reveal, so
+  // the Amount column cannot sort. Each cell carries its caption for the
+  // card layout on narrower screens.
+  const columns = useMemo<DataTableColumn<CompensationListItem>[]>(() => {
+    const captioned = (
+      label: string,
+      content: React.ReactNode,
+      className = "",
+    ) => (
+      <span
+        className={`compensation-cell ${className}`.trim()}
+        data-label={t(label)}
+      >
+        {content}
+      </span>
+    );
+    return [
+      ...(kind === "additional"
+        ? [
+            {
+              key: "name",
+              header: "Name",
+              minWidth: 110,
+              // Sorts by what the cell shows, "Not provided" included.
+              sortValue: (item: CompensationListItem) =>
+                item.label || t("Not provided"),
+              cell: (item: CompensationListItem) =>
+                captioned("Name", item.label || t("Not provided")),
+            },
+          ]
+        : []),
+      {
+        key: "effectiveFrom",
+        header: "Effective from",
+        minWidth: 120,
+        sortValue: (item) => item.effectiveFrom,
+        cell: (item) =>
+          captioned(
+            "Effective from",
+            <>
+              {formatDate(item.effectiveFrom, locale)}
+              {item.isCurrent && (
+                <span className="compensation-current-badge">
+                  {t("Current")}
+                </span>
+              )}
+            </>,
+            "compensation-date",
+          ),
+      },
+      {
+        key: "amount",
+        header: "Amount",
+        minWidth: 120,
+        cell: (item) => {
+          const visibleAmount = revealed[item.id];
+          const amount = visibleAmount
+            ? new Intl.NumberFormat(locale === "uk" ? "uk-UA" : "en-US", {
+                style: "currency",
+                currency: visibleAmount.currency,
+              }).format(visibleAmount.amountCents / 100)
+            : "•••••";
+          return captioned(
+            "Amount",
+            <>
+              <strong>{amount}</strong>
+              {canReveal && (
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={t(
+                    visibleAmount ? "Hide amount" : "Reveal amount",
+                  )}
+                  onClick={() => void reveal(item.id)}
+                >
+                  {visibleAmount ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              )}
+            </>,
+            "compensation-amount",
+          );
+        },
+      },
+      {
+        key: "period",
+        header: "Period",
+        minWidth: 80,
+        sortValue: (item) => t(item.period),
+        cell: (item) => captioned("Period", t(item.period)),
+      },
+      {
+        key: "schedule",
+        header: "Payment schedule",
+        minWidth: 120,
+        sortValue: (item) => t(paymentLabel(item.paymentSchedule)),
+        cell: (item) =>
+          captioned("Payment schedule", t(paymentLabel(item.paymentSchedule))),
+      },
+      {
+        key: "attachments",
+        header: "Attachments",
+        minWidth: 120,
+        // File names wrap instead of widening the table.
+        truncate: true,
+        cell: (item) =>
+          captioned(
+            "Attachments",
+            item.attachments.length ? (
+              item.attachments.map((attachment) => (
+                <span key={attachment.id}>{attachment.name}</span>
+              ))
+            ) : (
+              <span className="muted">—</span>
+            ),
+            "compensation-attachments",
+          ),
+      },
+    ];
+  }, [canReveal, kind, locale, reveal, revealed, t]);
   return (
     <article className="panel profile-compensation-card">
       <ProfileCardHeading
@@ -188,127 +316,49 @@ export function EmployeeCompensation({
         ))}
       </div>
       {visibleItems.length ? (
-        <div
-          className={`compensation-table ${kind === "additional" ? "additional" : "base"}${canEdit ? " editable" : ""}`}
-          role="table"
-          aria-label={t(
+        <DataTable
+          className={`compensation-table ${kind === "additional" ? "additional" : "base"}`}
+          rows={visibleItems}
+          rowKey={(item) => item.id}
+          columns={columns}
+          ariaLabel={t(
             kind === "base" ? "Base compensation" : "Additional compensation",
           )}
-        >
-          <div className="compensation-header" role="row">
-            {kind === "additional" && (
-              <span role="columnheader">{t("Name")}</span>
-            )}
-            <span role="columnheader">{t("Effective from")}</span>
-            <span role="columnheader">{t("Amount")}</span>
-            <span role="columnheader">{t("Period")}</span>
-            <span role="columnheader">{t("Payment schedule")}</span>
-            <span role="columnheader">{t("Attachments")}</span>
-            {canEdit && (
-              <span role="columnheader" aria-label={t("Actions")}>
-                <span className="sr-only">{t("Actions")}</span>
+          pageSize={false}
+          rowActions={
+            canEdit
+              ? (item) => [
+                  {
+                    icon: Pencil,
+                    label: t("Edit compensation"),
+                    onClick: () => {
+                      setKind(item.kind);
+                      setEditingItem(item);
+                      setError("");
+                      setDialogOpen(true);
+                    },
+                  },
+                  {
+                    icon: Trash2,
+                    label: t("Delete"),
+                    confirmTitle: t("Delete compensation"),
+                    danger: true,
+                    confirmText: t(
+                      "Delete this compensation record and its attachments?",
+                    ),
+                    onClick: () => void deleteItem(item),
+                  },
+                ]
+              : undefined
+          }
+          rowDetails={(item) =>
+            item.comment ? (
+              <span className="compensation-comment-row">
+                <strong>{t("Comment")}:</strong> {item.comment}
               </span>
-            )}
-          </div>
-          {visibleItems.map((item) => {
-            const visibleAmount = revealed[item.id];
-            const amount = visibleAmount
-              ? new Intl.NumberFormat(locale === "uk" ? "uk-UA" : "en-US", {
-                  style: "currency",
-                  currency: visibleAmount.currency,
-                }).format(visibleAmount.amountCents / 100)
-              : "•••••";
-            return (
-              <div className="compensation-row" role="row" key={item.id}>
-                {kind === "additional" && (
-                  <span
-                    className="compensation-cell"
-                    role="cell"
-                    data-label={t("Name")}
-                  >
-                    {item.label || t("Not provided")}
-                  </span>
-                )}
-                <span
-                  className="compensation-cell compensation-date"
-                  role="cell"
-                  data-label={t("Effective from")}
-                >
-                  {formatDate(item.effectiveFrom, locale)}
-                  {item.isCurrent && (
-                    <span className="compensation-current-badge">
-                      {t("Current")}
-                    </span>
-                  )}
-                </span>
-                <span
-                  className="compensation-cell compensation-amount"
-                  role="cell"
-                  data-label={t("Amount")}
-                >
-                  <strong>{amount}</strong>
-                  {canReveal && (
-                    <button
-                      type="button"
-                      className="icon-button"
-                      aria-label={t(
-                        visibleAmount ? "Hide amount" : "Reveal amount",
-                      )}
-                      onClick={() => void reveal(item.id)}
-                    >
-                      {visibleAmount ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  )}
-                </span>
-                <span
-                  className="compensation-cell"
-                  role="cell"
-                  data-label={t("Period")}
-                >
-                  {t(item.period)}
-                </span>
-                <span
-                  className="compensation-cell"
-                  role="cell"
-                  data-label={t("Payment schedule")}
-                >
-                  {t(paymentLabel(item.paymentSchedule))}
-                </span>
-                <span
-                  className="compensation-cell compensation-attachments"
-                  role="cell"
-                  data-label={t("Attachments")}
-                >
-                  {item.attachments.length ? (
-                    item.attachments.map((attachment) => (
-                      <span key={attachment.id}>{attachment.name}</span>
-                    ))
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </span>
-                {canEdit && (
-                  <div className="compensation-row-actions" role="cell">
-                    <CompensationRowMenu
-                      onEdit={() => {
-                        setKind(item.kind);
-                        setEditingItem(item);
-                        setError("");
-                        setDialogOpen(true);
-                      }}
-                      onDelete={() => setDeletingItem(item)}
-                    />
-                  </div>
-                )}
-                {item.comment && (
-                  <div className="compensation-comment-row" role="cell">
-                    <strong>{t("Comment")}:</strong> {item.comment}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+            ) : null
+          }
+        />
       ) : (
         <p className="muted profile-empty-state">
           {t("No compensation records yet.")}
@@ -509,140 +559,7 @@ export function EmployeeCompensation({
           </div>
         </DialogBackdrop>
       )}
-      {deletingItem && (
-        <DialogBackdrop onClose={() => setDeletingItem(null)}>
-          <div
-            className="dialog compact-dialog"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-compensation-title"
-            aria-describedby="delete-compensation-description"
-          >
-            <div className="dialog-header">
-              <h2 id="delete-compensation-title">{t("Delete compensation")}</h2>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={t("Close")}
-                onClick={() => setDeletingItem(null)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <p id="delete-compensation-description">
-              {t("Delete this compensation record and its attachments?")}
-            </p>
-            <div className="dialog-actions">
-              <button
-                type="button"
-                className="button ghost-button"
-                onClick={() => setDeletingItem(null)}
-              >
-                {t("Cancel")}
-              </button>
-              <button
-                type="button"
-                className="button danger-button"
-                onClick={() => void confirmDelete()}
-              >
-                <Trash2 size={15} /> {t("Delete")}
-              </button>
-            </div>
-          </div>
-        </DialogBackdrop>
-      )}
     </article>
-  );
-}
-
-function CompensationRowMenu({
-  onEdit,
-  onDelete,
-}: {
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [opensUp, setOpensUp] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  function toggleMenu() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    const rect = triggerRef.current?.getBoundingClientRect();
-    setOpensUp(Boolean(rect && window.innerHeight - rect.bottom < 110));
-    setOpen(true);
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !rootRef.current?.contains(event.target)
-      ) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  return (
-    <div className="compensation-row-menu" ref={rootRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="icon-button"
-        aria-label={t("More compensation actions")}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={toggleMenu}
-      >
-        <MoreHorizontal size={18} />
-      </button>
-      {open && (
-        <div
-          className={`compensation-row-menu-list${opensUp ? " opens-up" : ""}`}
-          role="menu"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onEdit();
-            }}
-          >
-            <Pencil size={14} /> {t("Edit compensation")}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onDelete();
-            }}
-          >
-            <Trash2 size={14} /> {t("Delete")}
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 

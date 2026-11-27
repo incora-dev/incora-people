@@ -311,8 +311,8 @@ export function EmployeeDirectory({
         key: "person",
         header: "Person",
         minWidth: 220,
-        // Long emails wrap instead of making a phone scroll sideways.
-        truncate: true,
+        // On phones the person text wraps instead of widening the table
+        // (CSS: .employee-directory-table [data-col="person"]).
         sortValue: (employee) =>
           `${employee.firstName} ${employee.lastName}`.trim(),
         cell: (employee) => (

@@ -3738,10 +3738,16 @@ h2 {
   color: var(--ink);
 }
 
-/* Phones show person and status without a header row, as before. */
+/* Phones show person and status without a header row, as before. The
+   person text wraps there (its content no longer widens the column), so
+   the table fits the screen; wider screens keep the name on one line. */
 @media (max-width: 760px) {
   .employee-directory-table .data-table-head {
     display: none;
+  }
+
+  .employee-directory-table [data-col="person"] {
+    contain: inline-size;
   }
 }
 

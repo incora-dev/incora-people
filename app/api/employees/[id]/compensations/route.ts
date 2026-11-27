@@ -13,7 +13,10 @@ import {
 } from "@/modules/files/storage";
 import { applicationErrorResponse } from "@/modules/shared/application-error";
 import { compensationRouteHandlers } from "@/modules/compensation/api-handlers";
-import { compensationMutationAccessResponse } from "@/modules/compensation/management-handlers";
+import {
+  compensationMutationAccessResponse,
+  isDuplicateBaseCompensationDate,
+} from "@/modules/compensation/management-handlers";
 
 export const GET = compensationRouteHandlers.GET;
 
@@ -122,8 +125,7 @@ export async function POST(
         .where(eq(employeeCompensations.id, compensationId))
         .catch(() => {});
     }
-    const message = error instanceof Error ? error.message : "";
-    if (message.includes("employee_compensations_base_effective_unique"))
+    if (isDuplicateBaseCompensationDate(error))
       return Response.json(
         { error: "A base compensation already exists for this date." },
         { status: 409 },

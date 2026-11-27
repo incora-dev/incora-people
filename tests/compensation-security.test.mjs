@@ -5,6 +5,7 @@ import { createCompensationRouteHandlers } from "../modules/compensation/handler
 import {
   compensationMutationAccessResponse,
   createCompensationMutationHandlers,
+  isDuplicateBaseCompensationDate,
 } from "../modules/compensation/management-handlers.ts";
 import { compensationUpdateSchema } from "../modules/compensation/contracts.ts";
 import { mergeCompensationUpdate } from "../modules/compensation/domain.ts";
@@ -482,4 +483,33 @@ test("compensation attachment route denies coworker and permits self and HR", as
     (await attachmentRoute(null)(fileRequest, fileContext)).status,
     401,
   );
+});
+
+test("recognises a duplicate base compensation date however D1 reports it", () => {
+  const sqlite = new Error(
+    "D1_ERROR: UNIQUE constraint failed: employee_compensations.employee_id, employee_compensations.effective_from: SQLITE_CONSTRAINT",
+  );
+  // Drizzle wraps the driver error and keeps it as the cause.
+  const wrapped = new Error(
+    'Failed query: insert into "employee_compensations" ...',
+    {
+      cause: sqlite,
+    },
+  );
+  assert.equal(isDuplicateBaseCompensationDate(sqlite), true);
+  assert.equal(isDuplicateBaseCompensationDate(wrapped), true);
+  assert.equal(
+    isDuplicateBaseCompensationDate(
+      new Error("index employee_compensations_base_effective_unique"),
+    ),
+    true,
+  );
+  assert.equal(
+    isDuplicateBaseCompensationDate(
+      new Error("UNIQUE constraint failed: stored_files.id"),
+    ),
+    false,
+  );
+  assert.equal(isDuplicateBaseCompensationDate(new Error("network")), false);
+  assert.equal(isDuplicateBaseCompensationDate(undefined), false);
 });

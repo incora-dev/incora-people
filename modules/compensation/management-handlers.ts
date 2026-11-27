@@ -4,6 +4,26 @@ import type { CompensationRecordForUpdate } from "./domain";
 
 type UpdateFile = File;
 
+/**
+ * True when an insert or update hit the one-base-compensation-per-date index.
+ * Drizzle wraps D1 errors ("Failed query: ..."), and SQLite names the columns,
+ * not the index, so the whole cause chain is checked for either form.
+ */
+export function isDuplicateBaseCompensationDate(error: unknown) {
+  for (let current = error, depth = 0; current && depth < 5; depth++) {
+    const message =
+      current instanceof Error ? current.message : String(current);
+    if (
+      message.includes("employee_compensations_base_effective_unique") ||
+      (message.includes("UNIQUE constraint failed") &&
+        message.includes("employee_compensations.effective_from"))
+    )
+      return true;
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return false;
+}
+
 export function compensationMutationAccessResponse(
   access: Pick<AccessPolicy, "managePeople" | "viewSensitiveData">,
 ) {
@@ -114,7 +134,7 @@ export function createCompensationMutationHandlers(dependencies: {
             { error: "One or more attachments do not belong to this record." },
             { status: 400 },
           );
-        if (message.includes("employee_compensations_base_effective_unique"))
+        if (isDuplicateBaseCompensationDate(error))
           return Response.json(
             { error: "A base compensation already exists for this date." },
             { status: 409 },

@@ -16,6 +16,7 @@ import {
   PackagePlus,
   Pencil,
   Plus,
+  Search,
   ShieldCheck,
   TriangleAlert,
 } from "lucide-react";
@@ -114,6 +115,8 @@ export function InventoryWorkspace({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [inventorySearch, setInventorySearch] = useState("");
+  // Item list page; a new search starts again from the first page.
+  const [itemPage, setItemPage] = useState(1);
   const [showArchived, setShowArchived] = useState(false);
   const [locationsDialogOpen, setLocationsDialogOpen] = useState(false);
   const [countsDialogOpen, setCountsDialogOpen] = useState(false);
@@ -692,6 +695,69 @@ export function InventoryWorkspace({
       </span>
     ),
   });
+  // Item list of the selected group. Minimum and storage locations are
+  // hidden up to 1100px, where the category list leaves the panel narrow;
+  // the selected item's panel shows them. The name column
+  // never widens the table: long names wrap.
+  const itemColumns: DataTableColumn<InventoryItemDto>[] = [
+    {
+      key: "name",
+      header: "Inventory item",
+      minWidth: 150,
+      truncate: true,
+      sortValue: (item) => item.name,
+      exportValue: (item) => item.name,
+      cell: (item) => (
+        <span className="inventory-item-name-cell">
+          <strong>
+            {item.name}
+            {!item.active && ` · ${t("Archived")}`}
+          </strong>
+        </span>
+      ),
+    },
+    {
+      key: "availability",
+      header: "Availability",
+      minWidth: 90,
+      sortValue: (item) => item.totalQuantity,
+      exportValue: (item) => `${item.totalQuantity} ${item.unit}`,
+      cell: (item) => (
+        <span className="inventory-item-quantity">
+          <span className="inventory-item-value">
+            {item.totalQuantity} {item.unit}
+          </span>
+          {item.lowStock && (
+            <span className="inventory-low-label">{t("Below minimum")}</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "minimum",
+      header: "Minimum",
+      minWidth: 100,
+      hideBelow: 1101,
+      sortValue: (item) => item.minimumTotal,
+      exportValue: (item) => `${item.minimumTotal} ${item.unit}`,
+      cell: (item) => (
+        <span className="inventory-item-value">
+          {item.minimumTotal} {item.unit}
+        </span>
+      ),
+    },
+    {
+      key: "locations",
+      header: "Storage locations",
+      minWidth: 120,
+      hideBelow: 1101,
+      sortValue: (item) => item.stocks.length,
+      cell: (item) => (
+        <span className="inventory-item-value">{item.stocks.length}</span>
+      ),
+    },
+  ];
+
   // The draft is a data-entry table: the counted quantity is typed in place.
   // Counted and difference don't sort: sorting by values being typed would
   // move the row away while the user types.
@@ -870,6 +936,7 @@ export function InventoryWorkspace({
                   onClick={() => {
                     setCategoryId(category.id);
                     setGroupId(null);
+                    setItemPage(1);
                     setItemId(null);
                     void loadHistory(null);
                   }}
@@ -939,6 +1006,7 @@ export function InventoryWorkspace({
                   className={`inventory-group-card ${selectedGroup?.id === group.id ? "selected" : ""} ${!group.active ? "archived" : ""}`}
                   onClick={() => {
                     setGroupId(group.id);
+                    setItemPage(1);
                     setItemId(null);
                     void loadHistory(null);
                   }}
@@ -1016,27 +1084,8 @@ export function InventoryWorkspace({
                   )}
                 </div>
                 <div className="inventory-item-toolbar">
-                  <input
-                    type="search"
-                    value={inventorySearch}
-                    onChange={(event) => {
-                      setInventorySearch(event.target.value);
-                      setItemId(null);
-                      void loadHistory(null);
-                    }}
-                    placeholder={t("Search inventory")}
-                    aria-label={t("Search inventory")}
-                  />
-                  {canManage && selectedGroup.active === 1 && (
-                    <button
-                      className="button secondary-button"
-                      onClick={() => openModal("item")}
-                    >
-                      <PackagePlus size={14} /> {t("Add item")}
-                    </button>
-                  )}
                   <button
-                    className="button secondary-button"
+                    className="button ghost-button"
                     disabled={
                       !canManage ||
                       !activeLocations.length ||
@@ -1049,8 +1098,7 @@ export function InventoryWorkspace({
                       })
                     }
                   >
-                    <ClipboardCheck size={14} />{" "}
-                    {t("Start group inventory count")}
+                    <ClipboardCheck size={14} /> {t("Group inventory count")}
                   </button>
                   <button
                     className="button ghost-button"
@@ -1060,81 +1108,75 @@ export function InventoryWorkspace({
                   >
                     <History size={14} /> {t("Group history")}
                   </button>
+                  {canManage && selectedGroup.active === 1 && (
+                    <button
+                      className="button secondary-button"
+                      onClick={() => openModal("item")}
+                    >
+                      <PackagePlus size={14} /> {t("Add item")}
+                    </button>
+                  )}
                 </div>
               </header>
-              <div className="inventory-item-list-heading" aria-hidden="true">
-                <span>{t("Inventory item")}</span>
-                <span>{t("Availability")}</span>
-                <span>{t("Minimum")}</span>
-                <span>{t("Storage locations")}</span>
-                {canManage && <span>{t("Actions")}</span>}
-              </div>
-              <div className="inventory-item-list">
-                {visibleItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`inventory-item-row ${item.lowStock ? "low-stock" : ""} ${selectedItem?.id === item.id ? "selected" : ""} ${!item.active ? "archived" : ""}`}
-                  >
-                    <span className="inventory-item-name-cell">
-                      <button
-                        type="button"
-                        className="inventory-item-name-button"
-                        aria-pressed={selectedItem?.id === item.id}
-                        onClick={() => {
-                          setItemId(item.id);
-                          void loadHistory({ type: "item", id: item.id });
+              <DataTable
+                // Another group starts on its first page with no sort.
+                key={selectedGroup.id}
+                className="inventory-item-table"
+                rows={visibleItems}
+                rowKey={(item) => item.id}
+                columns={itemColumns}
+                ariaLabel={t("Inventory items")}
+                page={itemPage}
+                onPageChange={setItemPage}
+                onRowClick={(item) => {
+                  setItemId(item.id);
+                  void loadHistory({ type: "item", id: item.id });
+                }}
+                toolbar={
+                  <div className="inventory-item-table-toolbar">
+                    <label className="field-search inventory-item-search">
+                      <Search size={15} />
+                      <input
+                        type="search"
+                        value={inventorySearch}
+                        onChange={(event) => {
+                          setInventorySearch(event.target.value);
+                          setItemPage(1);
+                          setItemId(null);
+                          void loadHistory(null);
                         }}
-                      >
-                        <strong>
-                          {item.name}
-                          {!item.active && ` · ${t("Archived")}`}
-                        </strong>
-                        <small>{item.unit}</small>
-                      </button>
-                    </span>
-                    <span className="inventory-item-quantity">
-                      <small>{t("Availability")}</small>
-                      <strong>
-                        {item.totalQuantity} {item.unit}
-                      </strong>
-                    </span>
-                    <span className="inventory-item-quantity">
-                      <small>{t("Minimum")}</small>
-                      <strong>
-                        {item.minimumTotal} {item.unit}
-                      </strong>
-                    </span>
-                    <span className="inventory-item-location-count">
-                      <small>{t("Storage locations")}</small>
-                      <strong>{item.stocks.length}</strong>
-                    </span>
-                    <span className="inventory-item-actions-cell">
-                      {item.lowStock && (
-                        <span className="inventory-low-label">
-                          {t("Below minimum")}
-                        </span>
-                      )}
-                      {canManage && (
-                        <button
-                          type="button"
-                          className="icon-button"
-                          aria-label={`${t("Edit")} ${item.name}`}
-                          onClick={() => openModal("item", item.id)}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                      )}
-                    </span>
+                        placeholder={t("Search inventory")}
+                        aria-label={t("Search inventory")}
+                      />
+                    </label>
                   </div>
-                ))}
-                {visibleItems.length === 0 && (
-                  <p className="compact-empty">
-                    {activeItems.length
-                      ? t("No inventory items match the search.")
-                      : t("No inventory items in this group yet.")}
-                  </p>
-                )}
-              </div>
+                }
+                isCurrentRow={(item) => selectedItem?.id === item.id}
+                rowClassName={(item) =>
+                  [
+                    item.lowStock ? "low-stock" : "",
+                    item.active ? "" : "archived",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                }
+                rowActions={
+                  canManage
+                    ? (item) => [
+                        {
+                          icon: Pencil,
+                          label: `${t("Edit")} ${item.name}`,
+                          onClick: () => openModal("item", item.id),
+                        },
+                      ]
+                    : undefined
+                }
+                empty={{
+                  text: activeItems.length
+                    ? t("No inventory items match the search.")
+                    : t("No inventory items in this group yet."),
+                }}
+              />
             </section>
           )}
 

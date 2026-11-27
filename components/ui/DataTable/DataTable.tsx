@@ -85,6 +85,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
     rowHref,
     onRowClick,
     rowClassName,
+    isCurrentRow,
     rowActions,
     rowDetails,
     empty,
@@ -361,6 +362,7 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
               ))
             : table.pageRows.map((row) => {
                 const key = rowKey(row);
+                const current = isCurrentRow?.(row) ?? false;
                 const selected = selectable && table.isSelected(key);
                 const extra = rowClassName?.(row);
                 // Row details are not a cell (the row would have one cell
@@ -373,7 +375,8 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
                   <div
                     key={key}
                     aria-describedby={hasDetails ? detailsId : undefined}
-                    className={`data-table-row${clickable ? " data-table-row-link" : ""}${selected ? " selected" : ""}${extra ? ` ${extra}` : ""}`}
+                    aria-current={current ? "true" : undefined}
+                    className={`data-table-row${clickable ? " data-table-row-link" : ""}${selected || current ? " selected" : ""}${extra ? ` ${extra}` : ""}`}
                     role="row"
                     tabIndex={clickable ? 0 : undefined}
                     onClick={

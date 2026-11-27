@@ -2,16 +2,25 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  CalendarPlus,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClockAlert,
+  History,
+  Pencil,
   Plus,
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/LocaleProvider";
 import { DialogBackdrop } from "@/components/ui/DialogBackdrop";
+import { DataTable } from "@/components/ui/DataTable/DataTable";
+import type {
+  DataTableColumn,
+  DataTableRowAction,
+  DataTableSort,
+} from "@/components/ui/DataTable/types";
 import { DateField } from "@/components/ui/DateField";
 import { SearchableEmployeeSelect } from "@/components/ui/SearchableEmployeeSelect";
 import { formatCount } from "@/lib/i18n";
@@ -211,8 +220,12 @@ export function OneOnOneWorkspace({
   const [employeeStatus, setEmployeeStatus] = useState("all");
   const [planFilter, setPlanFilter] =
     useState<OneOnOneDirectoryPlanFilter>("all");
-  const [employeeSort, setEmployeeSort] =
-    useState<OneOnOneDirectorySort>("name-asc");
+  // One sort state for the "Sort" select and the table headers.
+  const [directorySort, setDirectorySort] = useState<DataTableSort>({
+    key: "employee",
+    direction: "asc",
+  });
+  const employeeSort = directorySortOrder(directorySort);
   const [managerFilter, setManagerFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [rulesExpanded, setRulesExpanded] = useState(false);
@@ -332,7 +345,7 @@ export function OneOnOneWorkspace({
     return filterAndSortOneOnOneDirectory(candidates, plans, {
       query: employeeSearch,
       planFilter,
-      sort: employeeSort,
+      sort: "name-asc",
       selectedDay: view === "planned" ? selectedDay : null,
       locale: locale === "uk" ? "uk-UA" : "en-US",
     });
@@ -340,7 +353,6 @@ export function OneOnOneWorkspace({
     directory,
     employeeSearch,
     employeeStatus,
-    employeeSort,
     locale,
     managerFilter,
     planFilter,
@@ -349,6 +361,157 @@ export function OneOnOneWorkspace({
     teamFilter,
     view,
   ]);
+  // What each directory row shows, worked out once per person: its plans
+  // (or those due on the selected calendar day), the next date and status.
+  const directoryRowInfo = useMemo(() => {
+    const byId = new Map<number, DirectoryRowInfo>();
+    for (const person of directory) {
+      const personPlans = activePlansByEmployee.get(person.id) ?? [];
+      const matchingPlans = selectedDay
+        ? personPlans.filter((plan) => plan.dueAt === selectedDay)
+        : personPlans;
+      const primaryPlan = matchingPlans[0] ?? personPlans[0] ?? null;
+      const nextDueDate = selectedDay
+        ? (matchingPlans[0]?.dueAt ?? null)
+        : person.nextDueDate;
+      const status: DirectoryStatus =
+        person.status === "inactive"
+          ? "terminated"
+          : !personPlans.length
+            ? "no-plan"
+            : primaryPlan && primaryPlan.dueAt < today
+              ? "overdue"
+              : "planned";
+      byId.set(person.id, { personPlans, primaryPlan, nextDueDate, status });
+    }
+    return byId;
+  }, [activePlansByEmployee, directory, selectedDay, today]);
+  const directoryColumns = useMemo<DataTableColumn<DirectoryPerson>[]>(() => {
+    const info = (person: DirectoryPerson) => directoryRowInfo.get(person.id)!;
+    // Each cell keeps its small label: phones show rows as cards.
+    const labelled = (label: string, content: React.ReactNode) => (
+      <span className="one-on-one-cell">
+        <small className="one-on-one-mobile-label">{t(label)}</small>
+        {content}
+      </span>
+    );
+    const statusLabels: Record<DirectoryStatus, string> = {
+      overdue: t("Overdue"),
+      planned: t("Scheduled status"),
+      "no-plan": t("Without plan"),
+      terminated: t("Terminated"),
+    };
+    return [
+      {
+        key: "employee",
+        header: "Employee",
+        minWidth: 150,
+        // The id suffix keeps equal names in id order, reversed for Z–A.
+        sortValue: (person) =>
+          `${personName(person)}\u0000${String(person.id).padStart(10, "0")}`,
+        cell: (person) =>
+          labelled(
+            "Employee",
+            <>
+              <strong>{personName(person)}</strong>
+              <small>
+                {person.jobTitle}
+                {person.team ? ` · ${person.team}` : ""}
+              </small>
+            </>,
+          ),
+      },
+      {
+        key: "manager",
+        header: "Responsible manager",
+        sortValue: (person) =>
+          personName(info(person).primaryPlan?.manager ?? person.manager),
+        cell: (person) =>
+          labelled(
+            "Responsible manager",
+            <strong>
+              {personName(
+                info(person).primaryPlan?.manager ?? person.manager,
+              ) || "—"}
+            </strong>,
+          ),
+      },
+      {
+        key: "plan",
+        header: "Plan status",
+        minWidth: 140,
+        // Plans by cadence; people without a plan last.
+        sortValue: (person) => info(person).primaryPlan?.cadenceDays ?? null,
+        cell: (person) => {
+          const { primaryPlan } = info(person);
+          return labelled(
+            "Plan status",
+            <strong>
+              {primaryPlan
+                ? `${t("Has plan")} · ${formatCount(locale, primaryPlan.cadenceDays, { one: "день", few: "дні", many: "днів" }, { one: "day", many: "days" })}`
+                : t("Without plan")}
+            </strong>,
+          );
+        },
+      },
+      {
+        key: "nextDate",
+        header: "Next planned date",
+        // No date sorts last, as in the "Nearest / Farthest" options.
+        sortValue: (person) => info(person).nextDueDate,
+        cell: (person) =>
+          labelled(
+            "Next planned date",
+            <strong>{dateLabel(info(person).nextDueDate)}</strong>,
+          ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        minWidth: 105,
+        // A fixed rank, the same in every language.
+        sortValue: (person) => DIRECTORY_STATUS_RANK[info(person).status],
+        cell: (person) =>
+          labelled(
+            "Status",
+            <strong>{statusLabels[info(person).status]}</strong>,
+          ),
+      },
+    ];
+  }, [directoryRowInfo, locale, t]);
+  // Icon buttons in the pinned actions column; the label (tooltip) names
+  // each schedule's cadence, so several schedules stay distinguishable.
+  const directoryRowActions = (
+    person: DirectoryPerson,
+  ): DataTableRowAction[] => {
+    const { personPlans } = directoryRowInfo.get(person.id)!;
+    const actions: DataTableRowAction[] = [
+      {
+        icon: History,
+        label: `${t("History")} · ${personName(person)}`,
+        onClick: () => openEmployeeHistory(person.id),
+      },
+    ];
+    for (const plan of personPlans)
+      if (plan.canEdit)
+        actions.push({
+          icon: Pencil,
+          label: `${t("Correct schedule")} · ${formatCount(locale, plan.cadenceDays, { one: "день", few: "дні", many: "днів" }, { one: "day", many: "days" })}`,
+          onClick: () => setEditingPlan(plan),
+        });
+    if (
+      !personPlans.length &&
+      person.canManage &&
+      person.status !== "inactive" &&
+      !readOnlyPreview
+    )
+      actions.push({
+        icon: CalendarPlus,
+        label: t("Set up schedule"),
+        onClick: () => openPlanDialog(person.id),
+      });
+    return actions;
+  };
   const filteredEmployeesWithPlan = filteredDirectory.filter(
     (person) => (activePlansByEmployee.get(person.id)?.length ?? 0) > 0,
   ).length;
@@ -1144,12 +1307,27 @@ export function OneOnOneWorkspace({
                   <option value="no-plan">{t("Without plan")}</option>
                 </select>
                 <select
-                  value={employeeSort}
+                  value={employeeSort ?? "column"}
                   onChange={(event) =>
-                    setEmployeeSort(event.target.value as OneOnOneDirectorySort)
+                    setDirectorySort(
+                      directorySortFor(
+                        event.target.value as OneOnOneDirectorySort,
+                      ),
+                    )
                   }
                   aria-label={t("Sort one-on-one employees")}
                 >
+                  {/* Shown while another column header sorts. */}
+                  {!employeeSort && (
+                    <option value="column" disabled>
+                      {t(
+                        directoryColumns.find(
+                          (column) => column.key === directorySort.key,
+                        )?.header ?? "Sort one-on-one employees",
+                      )}{" "}
+                      {directorySort.direction === "asc" ? "↑" : "↓"}
+                    </option>
+                  )}
                   <option value="name-asc">{t("Name: A–Z")}</option>
                   <option value="name-desc">{t("Name: Z–A")}</option>
                   <option value="date-asc">{t("Nearest one-on-one")}</option>
@@ -1201,140 +1379,22 @@ export function OneOnOneWorkspace({
                   </button>
                 )}
               </div>
-              <div
-                className="one-on-one-directory-table"
-                role="table"
-                aria-label={t("Employee one-on-one schedules")}
-              >
-                <div className="one-on-one-directory-head" role="row">
-                  {[
-                    "Employee",
-                    "Responsible manager",
-                    "Plan status",
-                    "Next planned date",
-                    "Status",
-                    "Actions",
-                  ].map((label) => (
-                    <span role="columnheader" key={label}>
-                      {t(label)}
-                    </span>
-                  ))}
-                </div>
-                {filteredDirectory.map((person) => {
-                  const personPlans =
-                    activePlansByEmployee.get(person.id) ?? [];
-                  const matchingPlans = selectedDay
-                    ? personPlans.filter((plan) => plan.dueAt === selectedDay)
-                    : personPlans;
-                  const primaryPlan =
-                    matchingPlans[0] ?? personPlans[0] ?? null;
-                  const nextDueDate = selectedDay
-                    ? (matchingPlans[0]?.dueAt ?? null)
-                    : person.nextDueDate;
-                  const planStatus = !personPlans.length
-                    ? "no-plan"
-                    : primaryPlan && primaryPlan.dueAt < today
-                      ? "overdue"
-                      : "planned";
-
-                  return (
-                    <div
-                      className="one-on-one-directory-row"
-                      role="row"
-                      key={person.id}
-                    >
-                      <span role="cell">
-                        <small className="one-on-one-mobile-label">
-                          {t("Employee")}
-                        </small>
-                        <strong>{personName(person)}</strong>
-                        <small>
-                          {person.jobTitle}
-                          {person.team ? ` · ${person.team}` : ""}
-                        </small>
-                      </span>
-                      <span role="cell">
-                        <small className="one-on-one-mobile-label">
-                          {t("Responsible manager")}
-                        </small>
-                        <strong>
-                          {personName(primaryPlan?.manager ?? person.manager) ||
-                            "—"}
-                        </strong>
-                      </span>
-                      <span role="cell">
-                        <small className="one-on-one-mobile-label">
-                          {t("Plan status")}
-                        </small>
-                        <strong>
-                          {primaryPlan
-                            ? `${t("Has plan")} · ${formatCount(locale, primaryPlan.cadenceDays, { one: "день", few: "дні", many: "днів" }, { one: "day", many: "days" })}`
-                            : t("Without plan")}
-                        </strong>
-                      </span>
-                      <span role="cell">
-                        <small className="one-on-one-mobile-label">
-                          {t("Next planned date")}
-                        </small>
-                        <strong>{dateLabel(nextDueDate)}</strong>
-                      </span>
-                      <span role="cell">
-                        <small className="one-on-one-mobile-label">
-                          {t("Status")}
-                        </small>
-                        <strong>
-                          {person.status === "inactive"
-                            ? t("Terminated")
-                            : planStatus === "overdue"
-                              ? t("Overdue")
-                              : planStatus === "planned"
-                                ? t("Scheduled status")
-                                : t("Without plan")}
-                        </strong>
-                      </span>
-                      <span
-                        className="one-on-one-directory-actions"
-                        role="cell"
-                      >
-                        <button
-                          className="button ghost-button"
-                          onClick={() => openEmployeeHistory(person.id)}
-                        >
-                          {t("History")}
-                        </button>
-                        {personPlans.map(
-                          (plan) =>
-                            plan.canEdit && (
-                              <button
-                                key={plan.id}
-                                className="button secondary-button"
-                                onClick={() => setEditingPlan(plan)}
-                              >
-                                {t("Correct schedule")} · {plan.cadenceDays}
-                              </button>
-                            ),
-                        )}
-                        {!personPlans.length &&
-                          person.canManage &&
-                          person.status !== "inactive" &&
-                          !readOnlyPreview && (
-                            <button
-                              className="button secondary-button"
-                              onClick={() => openPlanDialog(person.id)}
-                            >
-                              {t("Set up schedule")}
-                            </button>
-                          )}
-                      </span>
-                    </div>
-                  );
-                })}
-                {!filteredDirectory.length && (
-                  <p className="compact-empty" role="status">
-                    {t("No employees match these filters.")}
-                  </p>
-                )}
-              </div>
+              <DataTable
+                className="one-on-one-table"
+                rows={filteredDirectory}
+                sizeRows={directory}
+                rowKey={(person) => person.id}
+                columns={directoryColumns}
+                ariaLabel={t("Employee one-on-one schedules")}
+                sort={directorySort}
+                onSortChange={setDirectorySort}
+                pageSize={false}
+                rowActions={directoryRowActions}
+                empty={{
+                  icon: Users,
+                  text: t("No employees match these filters."),
+                }}
+              />
             </>
           ) : (
             <>
@@ -1927,3 +1987,36 @@ function recipientName(userId: number, recipients: RecipientOption[]) {
   const recipient = recipients.find((entry) => entry.userId === userId);
   return recipient ? `${recipient.firstName} ${recipient.lastName}` : "";
 }
+
+/** The "Sort" option for a table sort, or null for another column. */
+function directorySortOrder(sort: DataTableSort): OneOnOneDirectorySort | null {
+  if (sort.key === "employee")
+    return sort.direction === "asc" ? "name-asc" : "name-desc";
+  if (sort.key === "nextDate")
+    return sort.direction === "asc" ? "date-asc" : "date-desc";
+  return null;
+}
+
+function directorySortFor(order: OneOnOneDirectorySort): DataTableSort {
+  if (order === "name-desc") return { key: "employee", direction: "desc" };
+  if (order === "date-asc") return { key: "nextDate", direction: "asc" };
+  if (order === "date-desc") return { key: "nextDate", direction: "desc" };
+  return { key: "employee", direction: "asc" };
+}
+
+type DirectoryStatus = "overdue" | "planned" | "no-plan" | "terminated";
+
+type DirectoryRowInfo = {
+  personPlans: Plan[];
+  primaryPlan: Plan | null;
+  nextDueDate: string | null;
+  status: DirectoryStatus;
+};
+
+/** Status sort order: what needs attention first. */
+const DIRECTORY_STATUS_RANK: Record<DirectoryStatus, number> = {
+  overdue: 0,
+  planned: 1,
+  "no-plan": 2,
+  terminated: 3,
+};

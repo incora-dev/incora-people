@@ -121,6 +121,9 @@ export type DataTableProps<Row> = {
   rowHref?: (row: Row) => string | null | undefined;
   onRowClick?: (row: Row) => void;
   rowClassName?: (row: Row) => string | undefined;
+  /** The row the page has open (e.g. its details shown below): highlighted
+   * like a selected row and announced with aria-current. */
+  isCurrentRow?: (row: Row) => boolean;
   /** Icon buttons in a fixed column on the right, kept in view. */
   rowActions?: (row: Row) => DataTableRowAction[];
   /**

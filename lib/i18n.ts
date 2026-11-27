@@ -1225,7 +1225,7 @@ const uk = {
   "Inventory settings": "Налаштування інвентарю",
   "Category history": "Історія категорії",
   "Group history": "Історія групи",
-  "Start group inventory count": "Почати інвентаризацію групи",
+  "Group inventory count": "Інвентаризація групи",
   "History location": "Місце зберігання для історії",
   "All locations": "Усі місця зберігання",
   "History for": "Історія",

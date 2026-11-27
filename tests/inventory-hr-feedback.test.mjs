@@ -36,11 +36,11 @@ test("item list shows a single aggregate quantity and keeps minimum separate", (
   );
   assert.match(
     workspace,
-    /<strong>\s*\{item\.totalQuantity\} \{item\.unit\}\s*<\/strong>/,
+    /<span className="inventory-item-value">\s*\{item\.totalQuantity\} \{item\.unit\}\s*<\/span>/,
   );
   assert.match(
     workspace,
-    /<strong>\s*\{item\.minimumTotal\} \{item\.unit\}\s*<\/strong>/,
+    /<span className="inventory-item-value">\s*\{item\.minimumTotal\} \{item\.unit\}\s*<\/span>/,
   );
   assert.doesNotMatch(workspace, /visibleItems\.map\(\(item, index\)/);
 });

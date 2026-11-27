@@ -1395,6 +1395,25 @@ test("shows assigned assets in employee profiles and tracks office inventory sep
   assert.match(inventoryRoute, /inventory_operations/);
   assert.match(inventoryRoute, /history\.correct/);
   assert.match(inventoryUi, /Stock by location/);
+  // The group item list is a DataTable: a row click selects the item (and
+  // loads its history), editing is a row action for managers only.
+  assert.match(inventoryUi, /className="inventory-item-table"/);
+  assert.match(
+    inventoryUi,
+    /onRowClick=\{\(item\) => \{\s*setItemId\(item\.id\);\s*void loadHistory\(\{ type: "item", id: item\.id \}\);/,
+  );
+  assert.match(inventoryUi, /rowActions=\{\s*canManage\s*\?/);
+  // Paged; a new search starts again from the first page.
+  assert.match(inventoryUi, /page=\{itemPage\}\s*onPageChange=\{setItemPage\}/);
+  assert.match(
+    inventoryUi,
+    /setInventorySearch\(event\.target\.value\);\s*setItemPage\(1\);/,
+  );
+  // The selected item is announced, not only highlighted.
+  assert.match(
+    inventoryUi,
+    /isCurrentRow=\{\(item\) => selectedItem\?\.id === item\.id\}/,
+  );
   assert.match(inventoryUi, /Start inventory count/);
   assert.match(inventoryUi, /action: "count\.save-lines"/);
   const finalizeCountStart = inventoryUi.indexOf(
